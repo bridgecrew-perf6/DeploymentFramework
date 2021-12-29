@@ -1,0 +1,6 @@
+**/__pycache__
+office
+.vscode
+config.db
+plugins/*
+!plugins/default

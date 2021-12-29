@@ -1,0 +1,10 @@
+###
+# Plugins Configuration
+# 
+# This file allows you to define what plugins should be loaded,
+#   as well as pass initial configuration values in order to bypass prompts.
+###
+
+# The default plugin will automatically be loaded; if there are no plugins enabled in this file.
+default:
+  enabled: false
