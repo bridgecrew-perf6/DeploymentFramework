@@ -2,7 +2,8 @@ from abc import ABC, abstractmethod
 import passgen
 from pymitter import EventEmitter
 import os, sys
-from .models.Module import Module
+from core.models.Module import Module
+from core.models.Settings import Settings
 
 class BasePlugin(ABC):
 
@@ -54,6 +55,7 @@ class BasePlugin(ABC):
         return passgen.passgen(length=length, puncuation=True, digits=True, letters=True, case='both')
 
     def register(self, db):
+        self.db = db
         if Module.select().where(Module.name == self.getName()).count() == 0:
             db.create_tables(self.pluginModels)
             self.module = Module.create(name = self.getName(), version = self.version)
