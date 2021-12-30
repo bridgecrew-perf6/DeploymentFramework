@@ -7,8 +7,6 @@ from core.models.Settings import Settings
 class Template(BasePlugin):
 
     def __init__(self, events, config=...):
-        # Preform Parent Actions
-        super().__init__(events, config=config)
         # Add Remote Office Listeners and functions
         self.Events = {
             **self.Events, 
@@ -19,6 +17,8 @@ class Template(BasePlugin):
                 'RO.config': 'createInitialConfig',
             }
         }
+        # Preform Parent Actions
+        super().__init__(events, config=config)
 
     @abstractmethod
     # Prompts User for Configuration Options
@@ -31,7 +31,7 @@ class Template(BasePlugin):
         if module == None:
             module = self.module
         # Return true if we have 0 records for the key
-        return Settings.select().where(Settings.plugin == module, Settings.key == 'setting_key').count() == 0
+        return Settings.select().where(Settings.plugin == module, Settings.key == setting_key).count() == 0
 
     # Preform the Prompts; and Update the settings
     def preformPrompts(self, questions = []):

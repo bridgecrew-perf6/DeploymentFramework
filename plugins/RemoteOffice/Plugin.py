@@ -10,12 +10,20 @@ class Plugin(BasePlugin):
 
     listenForEvents = {
         'RO.settings': 'preformPrompts',
-        'RO.install': 'preformInstall'
+        'RO.install': 'preformInstall',
+        'RO.launch': 'todo',
+        'RO.comman': 'todo'
     }
+
+    #TEMP
+    def todo(self):
+        print("...TODO...")
 
     availableCommands = {
         'RO.settings': 'Prompt the User for Configuration Settings',
-        'RO.install': 'After gathering required setting; preform the install'
+        'RO.install': 'After gathering required setting; preform the install',
+        'RO.launch': 'Launch a specific container',
+        'RO.command': 'Run a command on a specific container'
     }
 
     pluginModels = []
@@ -52,8 +60,6 @@ class Plugin(BasePlugin):
             for answer in answers:
                 Settings.create(plugin = self.module, key = answer, value=answers[answer])
 
-
-        install_dir = Settings.select().where(Settings.plugin == self.module, Settings.key == 'install_dir').get().value
         self.events.emit("RO.prompts")
 
 
@@ -70,4 +76,6 @@ class Plugin(BasePlugin):
         self.events.emit("RO.folders", install_dir)
         self.events.emit("RO.docker", 'docker-compose.yml', install_dir)
         self.events.emit("RO.config", install_dir)
+
+        #TODO: Preform Pre + Launch + Post
         pass

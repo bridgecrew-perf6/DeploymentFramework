@@ -17,7 +17,7 @@ class Plugin(BasePlugin):
         
         questionsToAsk = []
         for question in questions:
-            if self.promptRequired(question.name):
+            if self.promptRequired(question['name']):
                 questionsToAsk.append(question)
 
         self.preformPrompts(questionsToAsk)
@@ -61,7 +61,7 @@ class Plugin(BasePlugin):
     # Preform the actual launching of docker container for this plugin
     def launchDockerService(self):
         # Use the Docker Plugin to Launch a specific Container
-        self.events.emit("docker.launch", "plugin-Container-Name")
+        self.events.emit("RO.launch", "plugin-Container-Name")
         pass
 
     # Preform any post launch for this container.
@@ -71,7 +71,7 @@ class Plugin(BasePlugin):
         # See preLaunchConfig
 
         # Use the Docker Plugin to Launch a specific Container
-        self.events.emit("docker.command", "plugin-Container-Name", "command to run on the container")
+        self.events.emit("RO.command", "plugin-Container-Name", "command to run on the container")
         pass
 
     # Functions Provided by Parent...
