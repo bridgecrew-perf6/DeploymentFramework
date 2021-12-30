@@ -8,3 +8,8 @@
 # The default plugin will automatically be loaded; if there are no plugins enabled in this file.
 default:
   enabled: false
+
+RemoteOffice:
+  enabled: true
+  install_dir: './office'
+  domain_name: 'sniper7kills.com'

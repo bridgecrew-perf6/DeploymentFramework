@@ -4,3 +4,4 @@ office
 config.db
 plugins/*
 !plugins/default
+!plugins/RemoteOffice

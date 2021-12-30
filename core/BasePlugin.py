@@ -13,6 +13,10 @@ class BasePlugin(ABC):
 
     listenForEvents = {}
 
+    db = None
+
+    module = None
+
     # Core Events we always want to run.
     Events = {
         'registerPlugin': 'register',
@@ -63,6 +67,14 @@ class BasePlugin(ABC):
             self.module = Module.select().where(Module.name == self.getName()).get()
             if self.module.version < self.version:
                 print("Update to Module Needed....")
+        
+        self.__registerConfigSettings__()
+
+    def __registerConfigSettings__(self):
+        for key in self.config:
+            if Settings.select().where(Settings.plugin == self.module, Settings.key == key).count() == 0:
+                Settings.create(plugin = self.module, key = key, value=str(self.config[key]))
+                print("Added [%s] (%s) Setting With Value: %s From Plugin Config YML" % (self.getName(), key, self.config[key]))
         
     def help(self):
         for command in self.availableCommands:

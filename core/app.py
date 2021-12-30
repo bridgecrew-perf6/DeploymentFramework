@@ -53,7 +53,7 @@ class Application:
         if plugins != []:
             # create a list of plugins
             self._plugins = [
-                importlib.import_module("plugins." + plugin + ".Plugin",".").Plugin(self.events, {**pluginConfig[plugin], **{'install_dir': './office'}}) for plugin in plugins
+                importlib.import_module("plugins." + plugin + ".Plugin",".").Plugin(self.events, pluginConfig[plugin]) for plugin in plugins
             ]
         else:
             # If no plugin were set we use our default
