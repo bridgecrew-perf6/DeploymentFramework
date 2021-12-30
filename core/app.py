@@ -1,9 +1,11 @@
 import importlib
 from pymitter import EventEmitter
+from PyInquirer import prompt
 import os
 from peewee import *
 from core.models.Settings import Settings
 from core.models.Module import Module
+from core.models.EncryptedField import EncryptedField
 from datetime import datetime
 
 class Application:
@@ -14,6 +16,15 @@ class Application:
     db = SqliteDatabase('config.db')
 
     def __init__(self, plugins:list=[], pluginConfig={}):
+        question = [
+            {
+                'type': 'password',
+                'name': 'password',
+                'message': 'Encryption Password'
+            }
+        ]
+
+        EncryptedField.PASSPHRASE = prompt(question)['password'];
     
         if not os.path.isfile("config.db"):
             print("New Install Detected!")
@@ -24,6 +35,7 @@ class Application:
             # Create a default entry so we have a known update key
             # You could also use this to populate values such as Vendor Deploying; Contact Info Etc....
             Settings.create(key='install_date', value=datetime.now().strftime("%d-%b-%Y (%H:%M:%S.%f)"))
+            Settings.create(key='install_test', encrypt=True, value="Working")
         else:
             try:
                 # You can use this section to pull values from the database to display when launching....
@@ -31,6 +43,11 @@ class Application:
             except:
                 print("Error Launching... Config Database may be corrupt?")
                 exit()
+
+        if Settings.select().where(Settings.key == 'install_test').get().value != "Working":
+            print(Settings.select().where(Settings.key == 'install_test').get().value)
+            print("Error! Encryption Key Appears To Be Invalid!")
+            exit()
 
         # Checking if plugin were sent
         if plugins != []:
@@ -43,8 +60,6 @@ class Application:
             self._plugins = [importlib.import_module('plugins.default.Plugin',".").Plugin(self.events)]
 
         self.events.emit("registerPlugin", self.db)
-
-        #self._plugins.sort(key=lambda x: x.priority)
 
         
     def run(self, arguments):
