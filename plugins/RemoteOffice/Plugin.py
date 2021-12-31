@@ -12,12 +12,8 @@ class Plugin(BasePlugin):
         'RO.settings': 'preformPrompts',
         'RO.install': 'preformInstall',
         'RO.launch': 'launchContainer',
-        'RO.command': 'todo'
+        'RO.command': 'runCommand'
     }
-
-    #TEMP
-    def todo(self, args = None):
-        print("...TODO...")
 
     availableCommands = {
         'RO.settings': 'Prompt the User for Configuration Settings',
@@ -96,3 +92,7 @@ class Plugin(BasePlugin):
     def launchContainer(self, container_name):
         install_dir = Settings.select().where(Settings.plugin == self.module, Settings.key == 'install_dir').get().value
         self.events.emit("docker.start", install_dir, container_name)
+
+    def runCommand(self, container_name, command):
+        install_dir = Settings.select().where(Settings.plugin == self.module, Settings.key == 'install_dir').get().value
+        self.events.emit("docker.exec", install_dir, container_name, command)

@@ -19,6 +19,18 @@ class Plugin(BasePlugin):
 
     # Prompts User for Configuration Options
     def preformOfficePrompts(self):
+        RemoteOfficeModule = Module.select().where(Module.name == 'RemoteOffice').get()
+        domain = Settings.select().where(Settings.plugin == RemoteOfficeModule, Settings.key == 'domain_name').get().value
+
+        domainSplit = domain.split('.')
+        basedn=""
+        for part in domainSplit:
+            basedn = basedn + "dc=" + part +","
+
+        basedn=basedn[:-1]
+
+        Settings.create(plugin = self.module, key = 'base_dn', value = basedn)
+
         questions = [
             # REF: https://github.com/CITGuru/PyInquirer/
             {
@@ -37,6 +49,11 @@ class Plugin(BasePlugin):
                 'name': 'config_pass',
                 'message': '[%s] Default Config User Password:' % str.upper(self.getName())
             },
+            {
+                'type': 'password',
+                'name': 'it_password',
+                'message': '[%s] Default itsupport@%s Password:' % (str.upper(self.getName()), domain)
+            },
 
         ]
         
@@ -46,18 +63,6 @@ class Plugin(BasePlugin):
                 questionsToAsk.append(question)
 
         self.preformPrompts(questionsToAsk)
-
-        RemoteOfficeModule = Module.select().where(Module.name == 'RemoteOffice').get()
-        domain = Settings.select().where(Settings.plugin == RemoteOfficeModule, Settings.key == 'domain_name').get().value
-
-        domainSplit = domain.split('.')
-        basedn=""
-        for part in domainSplit:
-            basedn = basedn + "dc=" + part +","
-
-        basedn=basedn[:-1]
-
-        Settings.create(plugin = self.module, key = 'baseDN', value = basedn)
 
     # Used to create any storage and initizalation directories needed
     def createFolderStructure(self, install_dir = './office'):
@@ -84,15 +89,23 @@ class Plugin(BasePlugin):
         domain = Settings.select().where(Settings.plugin == RemoteOfficeModule, Settings.key == 'domain_name').get().value
         contents = ROLdapFunctions.envFile(domain, self.getSetting('organization_name'), self.getSetting('admin_pass'),self.getSetting('config_pass'),)
         self.writeContentsToFile(contents, 'envs/ldap.env', install_dir)
-        
-
-
     
     # Preform any additional config before the container is launched.
     # This is useful if you need to preform API calls to finalize the config
     #   for this plugin; but need to wait for another plugin to launch first
     def preLaunchConfig(self, install_dir = './office'):
-        pass
+        # Get Domain
+        RemoteOfficeModule = Module.select().where(Module.name == 'RemoteOffice').get()
+        domain = Settings.select().where(Settings.plugin == RemoteOfficeModule, Settings.key == 'domain_name').get().value
+
+        # postfix schema
+        contents = ROLdapFunctions.postfixSchema()
+        self.appendContentsToFile(contents, 'init/ldap/ldifs/postfix.schema', install_dir)
+
+        # Initial ldif population
+        contents = ROLdapFunctions.initialLDIF(self.getSetting('base_dn'), domain, self.getSetting('it_password'))
+        self.appendContentsToFile(contents, 'init/ldap/ldifs/0000-initial.ldif', install_dir)
+        
 
     # Preform the actual launching of docker container for this plugin
     def launchDockerService(self):
@@ -105,6 +118,22 @@ class Plugin(BasePlugin):
     def postLaunchConfig(self, install_dir = './office'):
         if self.promptRequired('post-launch'):
             Settings.create(plugin = self.module, key = 'post-launch', value='True')
+
+        # Ensure we can connect
+
+        # Inject postfix Schema w/ Config Account (Its already converted)
+        self.events.emit(
+            'RO.command', 
+            'ldap', 
+            'ldapadd -H ldapi:/// -D cn=config -w %s -f /assets/S7K-LDIF/postfix.schema' % self.getSetting('config_pass')
+        )
+        self.events.emit(
+            'RO.command', 
+            'ldap', 
+            'for f in /assets/S7K-LDIF/*.ldif; ldapadd -H ldapi:/// -D cn=admin,%s -w %s -f $f; done' % (self.getSetting('base_dn'), self.getSetting('admin_pass'))
+        )
+
+        # Inject remaining LDIFS in folder
 
     def createServiceAccount(self, user_name, user_password=None):
         if type(user_name) == type([]):
