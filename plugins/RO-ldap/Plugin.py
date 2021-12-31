@@ -100,11 +100,11 @@ class Plugin(BasePlugin):
 
         # postfix schema
         contents = ROLdapFunctions.postfixSchema()
-        self.appendContentsToFile(contents, 'init/ldap/ldifs/postfix.schema', install_dir)
+        self.writeContentsToFile(contents, 'init/ldap/ldifs/postfix.schema', install_dir)
 
         # Initial ldif population
         contents = ROLdapFunctions.initialLDIF(self.getSetting('base_dn'), domain, self.getSetting('it_password'))
-        self.appendContentsToFile(contents, 'init/ldap/ldifs/0000-initial.ldif', install_dir)
+        self.writeContentsToFile(contents, 'init/ldap/ldifs/0000-initial.ldif', install_dir)
         
 
     # Preform the actual launching of docker container for this plugin

@@ -11,12 +11,12 @@ default:
 
 Docker:
   enabled: true
-  super_user: false
+  startupByPass: false
 
 RemoteOffice:
   enabled: true
-  # install_dir: './office'
-  # domain_name: 'sniper7kills.com'
+  # install_dir: ./office
+  # domain_name: sniper7kills.com
 
 # RO INIT 10
 
@@ -25,19 +25,29 @@ RO-ldap:
 
 RO-mariadb:
   enabled: true
-  # root_password: 'SecurePassword'
-  # default_database: 'DB_Name'
-  # default_user: 'DB_User'
-  # default_pass: 'SecurePassword'
+  # root_password: SecurePassword
+  # default_database: DB_Name
+  # default_user: DB_User
+  # default_pass: SecurePassword
 
 RO-postgresql:
   enabled: true
-  # default_database: 'DB_Name'
-  # default_user: 'DB_User'
-  # default_pass: 'SecurePassword'
+  # default_database: DB_Name
+  # default_user: DB_User
+  # default_pass: SecurePassword
 
 RO-redis:
   enabled: true
 
 RO-cache:
   enabled: true
+
+# INIT 20
+
+RO-proxy:
+  enabled: true
+  # new_mail: admin@sniper7kills.com
+  # new_password: SecurePassword
+  # database_name: DB_Name
+  # database_user: DB_User
+  # database_pass: SecurePassword 

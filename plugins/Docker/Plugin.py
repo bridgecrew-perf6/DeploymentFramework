@@ -24,6 +24,33 @@ class Plugin(BasePlugin):
 
     pluginModels = []
 
+    def __init__(self, events, config=...):
+        super().__init__(events, config=config)
+
+        # Check and ensure we have docker-compose installed.
+        try:
+            result = subprocess.Popen(["docker-compose", "version"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            text = result.communicate()
+            return_code = result.returncode
+        except Exception as e:
+            return_code=-1
+        if return_code != 0:
+            print("[%s] ERROR! Unable to run 'docker-compose version' Do you have docker-compose installed?" % self.getName())
+            if 'startupByPass' not in config.keys()  or config['startupByPass'] != True:
+                exit()
+
+        # Check to ensure we have permission to run "docker ps" and that we don't fail.
+        try:
+            result = subprocess.Popen(["docker", "ps"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL )
+            text = result.communicate()
+            return_code = result.returncode
+        except Exception as e:
+            return_code=-1
+        if return_code != 0:
+            print("[%s] ERROR! Unable to run 'docker ps' Do you have proper permissions?" % self.getName())
+            if 'startupByPass' not in config.keys() or config['startupByPass'] != True:
+                exit()
+
     def help(self):
         print("-" * 50)
         print("Docker Plugin")
