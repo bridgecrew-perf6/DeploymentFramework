@@ -1,3 +1,7 @@
+layout: page
+title: "Deployment Framework"
+permalink: /
+
 # Deployment Framework
 
 This project is an internally developed tool used to perform complex actions. It is licensed as such.
