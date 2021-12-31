@@ -59,7 +59,7 @@ class Application:
             # If no plugin were set we use our default
             self._plugins = [importlib.import_module('plugins.default.Plugin',".").Plugin(self.events)]
 
-        self.events.emit("registerPlugin", self.db)
+        self.events.emit("registerPlugin", self.db, self._plugins)
 
         
     def run(self, arguments):

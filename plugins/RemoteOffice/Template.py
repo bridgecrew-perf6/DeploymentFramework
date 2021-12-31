@@ -49,12 +49,14 @@ class Template(BasePlugin):
 
     # Get a specific setting
     def getSetting(self, setting_key, module = None):
+        if module is None:
+            module = self.module
         # Check if we need to prompt for this setting....
         if self.promptRequired(setting_key, module):
             # Return None if we do....
             return None
         # Otherwise Return the Setting
-        return Settings.select().where(Settings.plugin == module, Settings.key == 'setting_key').get().value
+        return Settings.select().where(Settings.plugin == module, Settings.key == setting_key).get().value
 
     # Used to create any storage and initizalation directories needed
     def createFolderStructure(self, install_dir = './office'):
@@ -100,7 +102,7 @@ class Template(BasePlugin):
 
     @abstractmethod
     # Preform the actual launching of docker container for this plugin
-    def launchDockerService(self, install_dir = './office'):
+    def launchDockerService(self):
         pass
 
     @abstractmethod

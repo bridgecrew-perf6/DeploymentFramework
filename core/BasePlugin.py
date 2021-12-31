@@ -17,6 +17,8 @@ class BasePlugin(ABC):
 
     module = None
 
+    loadedPlugins = None
+
     # Core Events we always want to run.
     Events = {
         'registerPlugin': 'register',
@@ -58,8 +60,9 @@ class BasePlugin(ABC):
     def generateRandomString(self, length=25):
         return passgen.passgen(length=length, puncuation=True, digits=True, letters=True, case='both')
 
-    def register(self, db):
+    def register(self, db, loadedPlugins):
         self.db = db
+        self.loadedPlugins = loadedPlugins
         if Module.select().where(Module.name == self.getName()).count() == 0:
             db.create_tables(self.pluginModels)
             self.module = Module.create(name = self.getName(), version = self.version)

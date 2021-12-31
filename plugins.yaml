@@ -9,7 +9,17 @@
 default:
   enabled: false
 
+Docker:
+  enabled: true
+  super_user: false
+
 RemoteOffice:
   enabled: true
-  install_dir: './office'
-  domain_name: 'sniper7kills.com'
+  # install_dir: './office'
+  # domain_name: 'sniper7kills.com'
+RO-mariadb:
+  enabled: true
+  # root_password: 'SecurePassword'
+  # default_database: 'DB_Name'
+  # default_user: 'DB_User'
+  # default_pass: 'SecurePassword'

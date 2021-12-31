@@ -2,6 +2,4 @@
 office
 .vscode
 config.db
-plugins/*
-!plugins/default
-!plugins/RemoteOffice
+plugins/WIP

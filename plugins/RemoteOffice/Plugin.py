@@ -11,12 +11,12 @@ class Plugin(BasePlugin):
     listenForEvents = {
         'RO.settings': 'preformPrompts',
         'RO.install': 'preformInstall',
-        'RO.launch': 'todo',
-        'RO.comman': 'todo'
+        'RO.launch': 'launchContainer',
+        'RO.command': 'todo'
     }
 
     #TEMP
-    def todo(self):
+    def todo(self, args = None):
         print("...TODO...")
 
     availableCommands = {
@@ -73,9 +73,26 @@ class Plugin(BasePlugin):
         if not os.path.exists("%s/init/" % install_dir):
             os.makedirs("%s/init/" % install_dir)
 
+        if not os.path.exists("%s/envs/" % install_dir):
+            os.makedirs("%s/envs/" % install_dir)
+
         self.events.emit("RO.folders", install_dir)
+        self.cleanDockerCompose(install_dir, 'docker-compose.yml')
         self.events.emit("RO.docker", 'docker-compose.yml', install_dir)
         self.events.emit("RO.config", install_dir)
 
-        #TODO: Preform Pre + Launch + Post
-        pass
+        for plugin in self.loadedPlugins:
+            if plugin.getName().startswith("RO-"):
+                plugin.preLaunchConfig(install_dir)
+                plugin.launchDockerService()
+                plugin.postLaunchConfig(install_dir)
+
+    def cleanDockerCompose(self, install_dir, docker_file = 'docker-compose.yml'):
+        contents = "version: '3.5'\nservices:\n"
+        f = open(install_dir + '/' + docker_file, "w")
+        f.write(contents)
+        f.close()
+
+    def launchContainer(self, container_name):
+        install_dir = Settings.select().where(Settings.plugin == self.module, Settings.key == 'install_dir').get().value
+        self.events.emit("docker.start", install_dir, container_name)
