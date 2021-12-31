@@ -2,16 +2,16 @@ from core.models.Module import Module
 from plugins.RemoteOffice.Template import Template as BasePlugin
 from core.models.Settings import Settings
 
-from . import functions as ROMariadbFunctions
+from . import functions as ROLdapFunctions
 
 class Plugin(BasePlugin):
 
     listenForEvents = {
-        'RO.mariadb.createDatabase': 'createDatabase',
+        'RO.ldap.createServiceAccount': 'createServiceAccount',
     }
 
     availableCommands = {
-        'RO.mariadb.createDatabase': 'Create a new Database'
+        'RO.ldap.createServiceAccount': 'Create a new service account'
     }
 
     # The RO Base is 0; We need to be above that...
@@ -22,26 +22,20 @@ class Plugin(BasePlugin):
         questions = [
             # REF: https://github.com/CITGuru/PyInquirer/
             {
-                'type': 'password',
-                'name': 'root_password',
-                'message': '[%s] New ROOT user password:' % str.upper(self.getName())
-            },
-            {
                 'type': 'input',
-                'name': 'default_database',
-                'message': '[%s] New MYSQL database name:' % str.upper(self.getName()),
-                'default': 'itsupport'
-            },
-            {
-                'type': 'input',
-                'name': 'default_user',
-                'message': '[%s] New MYSQL user name:' % str.upper(self.getName()),
-                'default': 'itsupport'
+                'name': 'organization_name',
+                'message': '[%s] Name of the Organization:' % str.upper(self.getName()),
+                'default': 'Sniper7Kills LLC'
             },
             {
                 'type': 'password',
-                'name': 'default_password',
-                'message': '[%s] New MYSQL user\'s password:' % str.upper(self.getName())
+                'name': 'admin_pass',
+                'message': '[%s] Default Admin User Password:' % str.upper(self.getName()),
+            },
+            {
+                'type': 'password',
+                'name': 'config_pass',
+                'message': '[%s] Default Config User Password:' % str.upper(self.getName())
             },
 
         ]
@@ -53,26 +47,43 @@ class Plugin(BasePlugin):
 
         self.preformPrompts(questionsToAsk)
 
+        RemoteOfficeModule = Module.select().where(Module.name == 'RemoteOffice').get()
+        domain = Settings.select().where(Settings.plugin == RemoteOfficeModule, Settings.key == 'domain_name').get().value
+
+        domainSplit = domain.split('.')
+        basedn=""
+        for part in domainSplit:
+            basedn = basedn + "dc=" + part +","
+
+        basedn=basedn[:-1]
+
+        Settings.create(plugin = self.module, key = 'baseDN', value = basedn)
+
     # Used to create any storage and initizalation directories needed
     def createFolderStructure(self, install_dir = './office'):
         # The paths the plugin needs to ensure exist
         paths = [
-            'init/mariadb',
-            'storage/mariadb/data'
+            'storage/ldap/data',
+            'storage/ldap/config',
+            'init/ldap/ldifs',
+            'storage/ldap/certs',
+            'storage/ldap/backup'
         ]
         self.createFolders(paths, install_dir)
 
     # Used to append the plugin's docker service if it exists.
     def appendDockerService(self, docker_compose_file = 'docker-compose.yml', install_dir = './office'):
-        contents = ROMariadbFunctions.dockerFile()
+        contents = ROLdapFunctions.dockerFile()
         self.appendContentsToFile(contents, docker_compose_file, install_dir)
 
 
     # Used to initialize any any configuration settings that need to be deployed
     def createInitialConfig(self, install_dir = './office'):
         # ENV File
-        contents = ROMariadbFunctions.envFile(self.getSetting('root_password'), self.getSetting('default_database'), self.getSetting('default_user'), self.getSetting('default_password'))
-        self.writeContentsToFile(contents, 'envs/mariadb.env', install_dir)
+        RemoteOfficeModule = Module.select().where(Module.name == 'RemoteOffice').get()
+        domain = Settings.select().where(Settings.plugin == RemoteOfficeModule, Settings.key == 'domain_name').get().value
+        contents = ROLdapFunctions.envFile(domain, self.getSetting('organization_name'), self.getSetting('admin_pass'),self.getSetting('config_pass'),)
+        self.writeContentsToFile(contents, 'envs/ldap.env', install_dir)
         
 
 
@@ -85,7 +96,7 @@ class Plugin(BasePlugin):
 
     # Preform the actual launching of docker container for this plugin
     def launchDockerService(self):
-        self.events.emit("RO.launch", "mariadb")
+        self.events.emit("RO.launch", "ldap")
         pass
 
     # Preform any post launch for this container.
@@ -95,14 +106,18 @@ class Plugin(BasePlugin):
         if self.promptRequired('post-launch'):
             Settings.create(plugin = self.module, key = 'post-launch', value='True')
 
-    def createDatabase(self, db_name, db_user, db_password):
+    def createServiceAccount(self, user_name, user_password=None):
+        if type(user_name) == type([]):
+            user_password = user_name[1]
+            user_name = user_name[0]
+
         RemoteOfficeModule = Module.select().where(Module.name == 'RemoteOffice').get()
         install_dir = Settings.select().where(Settings.plugin == RemoteOfficeModule, Settings.key == 'install_dir').get().value
-        content = ROMariadbFunctions.dbsql(db_name, db_user, db_password)
+        content = ROLdapFunctions.serviceAccountLDIF(self.getSetting('base_dn'), user_name, user_password)
+
+        self.writeContentsToFile(content, 'init/ldap/ldifs/%s.ldif' % user_name, install_dir)
 
         # See if the postLaunchConfig has been run...
-        if self.promptRequired('post-launch'):
-            # It hasn't been run yet...
-            self.writeContentsToFile(content, 'init/mariadb/%s.sql' % db_name, install_dir)
-        else:
+        if not self.promptRequired('post-launch'):
+            # It has... So we need to connect to the docker container to run it.
             print("TODO: preform docker command to create the database...")

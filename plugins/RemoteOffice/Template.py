@@ -78,6 +78,9 @@ class Template(BasePlugin):
 
     # Writes contents to file
     def writeContentsToFile(self, contents, file_name, install_dir = './office'):
+        new_dir = '/'.join((install_dir + '/' + file_name).split('/')[:-1])
+        if not os.path.exists(new_dir):
+            os.makedirs(new_dir)
         f = open(install_dir + '/' + file_name, "w")
         f.write(contents)
         f.close()

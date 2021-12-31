@@ -17,9 +17,27 @@ RemoteOffice:
   enabled: true
   # install_dir: './office'
   # domain_name: 'sniper7kills.com'
+
+# RO INIT 10
+
+RO-ldap:
+  enabled: true
+
 RO-mariadb:
   enabled: true
   # root_password: 'SecurePassword'
   # default_database: 'DB_Name'
   # default_user: 'DB_User'
   # default_pass: 'SecurePassword'
+
+RO-postgresql:
+  enabled: true
+  # default_database: 'DB_Name'
+  # default_user: 'DB_User'
+  # default_pass: 'SecurePassword'
+
+RO-redis:
+  enabled: true
+
+RO-cache:
+  enabled: true
