@@ -1,5 +1,5 @@
-from core.models.Module import Module
 from plugins.RemoteOffice.Template import Template as BasePlugin
+from core.models.Module import Module
 from core.models.Settings import Settings
 
 from . import functions as ROSSOFunctions
@@ -19,8 +19,7 @@ class Plugin(BasePlugin):
 
     # Prompts User for Configuration Options
     def preformOfficePrompts(self):
-        RemoteOfficeModule = Module.select().where(Module.name == 'RemoteOffice').get()
-        domain = Settings.select().where(Settings.plugin == RemoteOfficeModule, Settings.key == 'domain_name').get().value
+        
         questions = [
             # REF: https://github.com/CITGuru/PyInquirer/
             {
@@ -132,5 +131,12 @@ class Plugin(BasePlugin):
         if not self.promptRequired('post-launch'):
             return
 
-        
+        RemoteOfficeModule = Module.select().where(Module.name == 'RemoteOffice').get()
+        domain = Settings.select().where(Settings.plugin == RemoteOfficeModule, Settings.key == 'domain_name').get().value
+
+        ROldapModule = Module.select().where(Module.name == 'RO-ldap').get()
+        base_dn = Settings.select().where(Settings.plugin == ROldapModule, Settings.key == 'base_dn').get().value
+
+        ROSSOFunctions.configureLDAPSource(domain, self.getSetting('admin_token'), base_dn, self.getSetting('ldap_password'))
+
         Settings.create(plugin = self.module, key = 'post-launch', value='True')

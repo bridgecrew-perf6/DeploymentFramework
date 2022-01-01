@@ -38,6 +38,10 @@ def dockerFile(image, tag):
 """ % (image, tag, image, tag)
 
 def envFile(secret_key, admin_pass, admin_token, db_user, db_name, db_pass):
+    from core.models.Module import Module
+    from core.models.Settings import Settings
+    RemoteOfficeModule = Module.select().where(Module.name == 'RemoteOffice').get()
+    domain = Settings.select().where(Settings.plugin == RemoteOfficeModule, Settings.key == 'domain_name').get().value
     return """
 AUTHENTIK_SECRET_KEY=%s
 AK_ADMIN_PASS=%s
@@ -60,5 +64,82 @@ AUTHENTIK_EMAIL__USE_TLS=TRUE
 AUTHENTIK_EMAIL__USE_SSL=false
 AUTHENTIK_EMAIL__TIMEOUT=10
 # Email address authentik will send from, should have a correct @domain
-AUTHENTIK_EMAIL__FROM=noreply@sniper7kills.com
-""" % (secret_key, admin_pass, admin_token, db_user, db_name, db_pass)
+AUTHENTIK_EMAIL__FROM=sso@%s
+""" % (secret_key, admin_pass, admin_token, db_user, db_name, db_pass, domain)
+
+def getLDAPGroups(domain, token):
+    import requests, time
+    import urllib3
+    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+    
+    for x in range(10):
+        try:
+            url = "https://sso.%s/api/v3/propertymappings/ldap" % domain
+            r = requests.get(url, headers={'Authorization': "Bearer %s" % token}, verify=False)
+            if r.status_code == 200:
+                # print("200")
+                response = r.json()
+
+                mappings = response['results']
+                mapIDS = []
+                for map in mappings:
+                    if "LDAP Mapping" in map['name']:
+                        mapIDS.append(map['pk'])
+                return mapIDS
+            else:
+                # print("NON-200")
+                # print(r)
+                time.sleep(5)
+        except Exception as e:
+            # print("LDAP GROUPS - EXCEPTION")
+            time.sleep(5)
+    print("Error... Exiting...")
+    exit()
+
+def configureLDAPSource(domain, token, base_dn, bind_pass):
+    import requests, time
+    groups = getLDAPGroups(domain, token)
+    jsondata = {
+        "name": "LDAP Source",
+        "slug": "ldap-source",
+        "enabled": True,
+        # "authentication_flow": "17db1e5b-5450-4000-8d41-86f5c8db4f01",
+        # "enrollment_flow": "17db1e5b-5450-4000-8059-09e3d05c2601",
+        # "policy_engine_mode": "all",
+        # "user_matching_mode": "identifier",
+        "server_uri": "ldap://ldap",
+        # "peer_certificate": "17db1e5b-5450-4000-8238-173e8e33c301",
+        "bind_cn": "cn=SSO-BIND,ou=Service,ou=Accounts,%s" % base_dn,
+        "bind_password": bind_pass,
+        "start_tls": True,
+        "base_dn": base_dn,
+        # "additional_user_dn": "string",
+        # "additional_group_dn": "string",
+        "user_object_filter": "(objectClass=inetOrgPerson)",
+        "group_object_filter": "(objectClass=posixGroup)",
+        "group_membership_field": "member",
+        "object_uniqueness_field": "cn",
+        "sync_users": True,
+        "sync_users_password": True,
+        "sync_groups": True,
+        # "sync_parent_group": "17db1e5b-5450-4000-8716-ba7011568201",
+        "property_mappings": groups,
+        "property_mappings_group": groups
+    }
+    for x in range(10):
+        try:
+            r = requests.post('https://sso.%s/api/v3/sources/ldap/' % domain, json=jsondata, headers={'Authorization': "Bearer %s" % token}, verify=False)
+            status = r.status_code
+            if status != 201:
+                #print(r.json())
+                time.sleep(10)
+            else:
+                print("syncing...")
+                r = requests.patch('https://sso.%s/api/v3/sources/ldap/ldap-source'% domain, headers={'Authorization': "Bearer %s" % token}, verify=False)
+                r.status_code
+                break
+        except Exception as e:
+            #print("Exception")
+            time.sleep(10)
+
+    

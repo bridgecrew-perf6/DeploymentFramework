@@ -174,7 +174,6 @@ givenname: IT
 homedirectory: /home/users/itsupport
 loginshell: /bin/bash
 mail: itsupport@%s
-mailAlias: postmaster@%s
 objectclass: inetOrgPerson
 objectclass: posixAccount
 objectclass: PostfixBookMailAccount
@@ -219,5 +218,5 @@ objectclass: top
 ou: Mail
 
 """ % (
-   base_dn, base_dn, base_dn, base_dn, domain_name, domain_name, sha512_crypt(it_password), base_dn, base_dn, base_dn, base_dn, base_dn, base_dn
+   base_dn, base_dn, base_dn, base_dn, domain_name, sha512_crypt(it_password), base_dn, base_dn, base_dn, base_dn, base_dn, base_dn
 )

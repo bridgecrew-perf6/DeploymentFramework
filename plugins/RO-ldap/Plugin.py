@@ -110,7 +110,7 @@ class Plugin(BasePlugin):
 
         # Initial ldif population
         contents = ROLdapFunctions.initialLDIF(self.getSetting('base_dn'), domain, self.getSetting('it_password'))
-        self.writeContentsToFile(contents, 'init/ldap/ldifs/0000-initial.ldif', install_dir)
+        self.writeContentsToFile(contents, 'init/ldap/ldifs/initial.load', install_dir)
         
 
     # Preform the actual launching of docker container for this plugin
@@ -139,7 +139,7 @@ class Plugin(BasePlugin):
     def postLaunchConfig(self, install_dir = './office'):
         if not self.promptRequired('post-launch'):
             return
-        Settings.create(plugin = self.module, key = 'post-launch', value='True')
+        
 
         # Ensure we can connect
 
@@ -150,11 +150,18 @@ class Plugin(BasePlugin):
             'ldapadd -H ldapi:/// -D cn=config -w %s -f /assets/S7K-LDIF/postfix.schema' % self.getSetting('config_pass')
         )
 
+        self.events.emit(
+            'RO.command', 
+            'ldap', 
+            'ldapadd -H ldapi:/// -D cn=admin,%s -w %s -f /assets/S7K-LDIF/initial.load' % (self.getSetting('base_dn'), self.getSetting('admin_pass'))
+        )
+
         # Inject remaining LDIFS in folder
         for x in os.listdir(install_dir + '/init/ldap/ldifs'):
             if x.endswith(".ldif"):
             # Prints only text file present in My Folder
                 try:
+                    print(x)
                     self.events.emit(
                         'RO.command', 
                         'ldap', 
@@ -163,6 +170,7 @@ class Plugin(BasePlugin):
                 except:
                     print("ERROR LOADING LDIF %s" % x)
                     exit()
+        Settings.create(plugin = self.module, key = 'post-launch', value='True')
 
     def createServiceAccount(self, user_name, user_password=None):
         if type(user_name) == type([]):
