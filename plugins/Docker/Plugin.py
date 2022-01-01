@@ -86,6 +86,9 @@ class Plugin(BasePlugin):
             return_code = result.returncode
         except Exception as e:
             raise e
+
+        if return_code != 0:
+            raise Exception("Non 0 Return")
             
         # if return_code != 0:
         #     print("Error Executing Docker Command")
@@ -108,6 +111,5 @@ class Plugin(BasePlugin):
             
         if return_code != 0:
             print("Error Executing Docker Command")
-            print("Command: %s" % command)
             print("Result: [%s] %s" % (return_code, text))
             exit()

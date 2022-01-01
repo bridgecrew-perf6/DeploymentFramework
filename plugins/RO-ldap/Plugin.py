@@ -10,10 +10,12 @@ class Plugin(BasePlugin):
 
     listenForEvents = {
         'RO.ldap.createServiceAccount': 'createServiceAccount',
+        'RO.ldap.waitForReady': 'waitToBeReady'
     }
 
     availableCommands = {
-        'RO.ldap.createServiceAccount': 'Create a new service account'
+        'RO.ldap.createServiceAccount': 'Create a new service account',
+        'RO.ldap.waitForReady' : 'Wait and ensure LDAP is ready'
     }
 
     # The RO Base is 0; We need to be above that...
@@ -144,12 +146,16 @@ class Plugin(BasePlugin):
         # Ensure we can connect
 
         # Inject postfix Schema w/ Config Account (Its already converted)
+        self.waitToBeReady()
+        print("postfix.schema")
         self.events.emit(
             'RO.command', 
             'ldap', 
             'ldapadd -H ldapi:/// -D cn=config -w %s -f /assets/S7K-LDIF/postfix.schema' % self.getSetting('config_pass')
         )
 
+        self.waitToBeReady()
+        print("initial.load")
         self.events.emit(
             'RO.command', 
             'ldap', 
@@ -162,6 +168,7 @@ class Plugin(BasePlugin):
             # Prints only text file present in My Folder
                 try:
                     print(x)
+                    self.waitToBeReady()
                     self.events.emit(
                         'RO.command', 
                         'ldap', 

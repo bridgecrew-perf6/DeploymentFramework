@@ -141,5 +141,3 @@ def configureLDAPSource(domain, token, base_dn, bind_pass):
         except Exception as e:
             #print("Exception")
             time.sleep(10)
-
-    

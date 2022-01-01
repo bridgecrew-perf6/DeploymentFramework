@@ -67,3 +67,12 @@ RO-sso:
   admin_pass: SecurePassword
   admin_token: SomeLongSecureToken
   ldap_password: SecurePassword
+
+
+# INIT 30
+
+RO-mail:
+  enabled: true
+  ldap_password: SecurePassword
+  # client_id: SomeVeryLongAndSecureString
+  # client_secret:SomeVeryVeryLongAndSecureString

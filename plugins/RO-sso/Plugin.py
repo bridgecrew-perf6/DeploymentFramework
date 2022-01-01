@@ -1,18 +1,19 @@
 from plugins.RemoteOffice.Template import Template as BasePlugin
 from core.models.Module import Module
 from core.models.Settings import Settings
+import requests
 
 from . import functions as ROSSOFunctions
 
 class Plugin(BasePlugin):
 
-    # listenForEvents = {
-    #     'RO.mariadb.createDatabase': 'createDatabase',
-    # }
+    listenForEvents = {
+        'RO.sso.createOauthApplication': 'createOauthApplication',
+    }
 
-    # availableCommands = {
-    #     'RO.mariadb.createDatabase': 'Create a new Database'
-    # }
+    availableCommands = {
+        'RO.sso.createOauthApplication': 'Create a new OAuth based Application'
+    }
 
     # Requires Redis + PostGresql + LDAP + Proxy
     priority = 20
@@ -69,7 +70,7 @@ class Plugin(BasePlugin):
             {
                 'type': 'password',
                 'name': 'ldap_password',
-                'message': '[SSO] New Password for SSO-Bind LDAP account',
+                'message': '[SSO] New Password for SSO-BIND LDAP account',
             }
             
 
@@ -140,3 +141,69 @@ class Plugin(BasePlugin):
         ROSSOFunctions.configureLDAPSource(domain, self.getSetting('admin_token'), base_dn, self.getSetting('ldap_password'))
 
         Settings.create(plugin = self.module, key = 'post-launch', value='True')
+
+
+    def getDefaultFlowID(self):
+        RemoteOfficeModule = Module.select().where(Module.name == 'RemoteOffice').get()
+        domain = Settings.select().where(Settings.plugin == RemoteOfficeModule, Settings.key == 'domain_name').get().value
+        
+        r = requests.get('https://sso.%s/api/v3/flows/instances/default-authentication-flow/'% domain, headers={'Authorization': "Bearer %s" % self.getSetting('admin_token')}, verify=False)
+        return r.json()['pk']
+
+    def getOauthPropertyMappings(self):
+        RemoteOfficeModule = Module.select().where(Module.name == 'RemoteOffice').get()
+        domain = Settings.select().where(Settings.plugin == RemoteOfficeModule, Settings.key == 'domain_name').get().value
+        
+        r = requests.get('https://sso.%s/api/v3/propertymappings/all/?search=oauth'% domain, headers={'Authorization': "Bearer %s" % self.getSetting('admin_token')}, verify=False)
+        response = r.json()['results']
+        keys = []
+        for mapping in response:
+            if "Proxy" not in mapping['name']:
+                keys.append(mapping['pk'])
+        return keys
+
+    def createOauthProvider(self, name, client_id, client_secret, redirect_uri= None):
+        RemoteOfficeModule = Module.select().where(Module.name == 'RemoteOffice').get()
+        domain = Settings.select().where(Settings.plugin == RemoteOfficeModule, Settings.key == 'domain_name').get().value
+        data = {
+            'name': '%s OAuth Provider' % name,
+            'authorization_flow': self.getDefaultFlowID(),
+            'property_mappings': self.getOauthPropertyMappings(),
+            'client_type': 'confidential',
+            'client_id': client_id,
+            'client_secret': client_secret, 
+            'issuer_mode': 'per_provider',
+            'sub_mode': 'user_email',
+            'include_claims_in_id_token': True
+        }
+        if redirect_uri is not None:
+                data['redirect_uris'] = redirect_uri
+        r = requests.post('https://sso.%s/api/v3/providers/oauth2/' % domain, json=data, headers={'Authorization': "Bearer %s" % self.getSetting('admin_token')}, verify=False)
+        if r.status_code != 201:
+            print(r.json())
+            exit()
+        else:
+            provider_id = r.json()['pk']
+            r = requests.get('https://sso.%s/api/v3/providers/oauth2/%s' % (domain, provider_id), headers={'Authorization': "Bearer %s" % self.getSetting('admin_token')}, verify=False)
+            r = requests.put('https://sso.%s/api/v3/providers/oauth2/%s' % (domain, provider_id), json=r.json(), headers={'Authorization': "Bearer %s" % self.getSetting('admin_token')}, verify=False)
+            return provider_id
+
+    def createOauthApplication(self, name, slug, launch_url, launch_description, client_id, client_secret, redirection_uri = None, launch_provider = None):
+        RemoteOfficeModule = Module.select().where(Module.name == 'RemoteOffice').get()
+        domain = Settings.select().where(Settings.plugin == RemoteOfficeModule, Settings.key == 'domain_name').get().value
+        data = {
+            'name': name,
+            'slug': slug,
+            'provider': self.createOauthProvider(name, client_id, client_secret, redirection_uri),
+            "meta_launch_url": launch_url,
+            "meta_description": launch_description,
+            "policy_engine_mode": "all"
+        }
+        if launch_provider is not None:
+            data['launch_provider'] = launch_provider
+
+        r = requests.post('https://sso.%s/api/v3/core/applications/' % domain, json=data, headers={'Authorization': "Bearer %s" % self.getSetting('admin_token')}, verify=False)
+        if r.status_code != 201:
+            print()
+            exit()
+        
