@@ -81,6 +81,8 @@ class Plugin(BasePlugin):
     # This is useful if you need to preform API calls to finalize the config
     #   for this plugin; but need to wait for another plugin to launch first
     def preLaunchConfig(self, install_dir = './office'):
+        if not self.promptRequired('post-launch'):
+            return
         pass
 
     # Preform the actual launching of docker container for this plugin
@@ -92,8 +94,9 @@ class Plugin(BasePlugin):
     # Ensure API's are up
     # Change default passwords, Etc...
     def postLaunchConfig(self, install_dir = './office'):
-        if self.promptRequired('post-launch'):
-            Settings.create(plugin = self.module, key = 'post-launch', value='True')
+        if not self.promptRequired('post-launch'):
+            return
+        Settings.create(plugin = self.module, key = 'post-launch', value='True')
 
     def createDatabase(self, db_name, db_user, db_password):
         RemoteOfficeModule = Module.select().where(Module.name == 'RemoteOffice').get()

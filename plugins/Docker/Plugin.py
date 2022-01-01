@@ -13,13 +13,15 @@ class Plugin(BasePlugin):
         'docker.start': 'startDockerContainer',
         'docker.exec': 'executeDockerCommand',
         'docker.stop': 'stopDockerContainer',
-        'docker.rebuild': 'rebuildDockerContainer'
+        'docker.rebuild': 'rebuildDockerContainer',
+        'docker.down':  'downDockerEnvironment'
     }
 
     availableCommands = {
         'docker.start': 'Start a specific docker container',
         'docker.stop': 'Stop a specific docker container',
-        'docker.rebuild': 'Stop; pull/build/update image; Start'
+        'docker.rebuild': 'Stop; pull/build/update image; Start',
+        'docker.down': 'Stop all containers in an environment'
     }
 
     pluginModels = []
@@ -61,12 +63,11 @@ class Plugin(BasePlugin):
         #print("[TODO] Start Docker Container In %s Named %s" % (launch_location, container_name))
         launchCommand = ["docker-compose","up","-d", container_name]
         try:
-            result = subprocess.Popen(launchCommand, cwd=launch_location)
+            result = subprocess.Popen(launchCommand, cwd=launch_location, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
             text = result.communicate()[0]
             return_code = result.returncode
         except Exception as e:
-            print(e)
-            return_code=-1
+            return_code = -1
             
         if return_code != 0:
             print("Error Starting Container...")
@@ -74,25 +75,39 @@ class Plugin(BasePlugin):
 
     def executeDockerCommand(self, launch_location, container_name, command):
         command = command.split(" ")
-        launchCommand = ["docker-compose","exec",container_name]
+        launchCommand = ["docker-compose","exec", container_name]
         for word in command:
             launchCommand.append(word)
 
         # print("[TODO] Run Command in [%s] Container [%s] [%s]" % (launch_location, container_name, launchCommand))
         try:
-            result = subprocess.Popen(launchCommand, cwd=launch_location)
+            result = subprocess.Popen(launchCommand, cwd=launch_location, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
             text = result.communicate()[0]
             return_code = result.returncode
         except Exception as e:
-            print(e)
-            return_code=-1
+            raise e
             
-        if return_code != 0:
-            print("Error Executing Command...")
-            exit()
+        # if return_code != 0:
+        #     print("Error Executing Docker Command")
+        #     print("Command: %s" % command)
+        #     print("Result: [%s] %s" % (return_code, text))
 
     def stopDockerContainer(self, launch_location, container_name):
         pass
 
     def rebuildDockerContainer(self, launch_location, container_name=None):
         pass
+
+    def downDockerEnvironment(self, launch_location):
+        try:
+            result = subprocess.Popen(["docker-compose", "down"], cwd=launch_location)
+            text = result.communicate()[0]
+            return_code = result.returncode
+        except Exception as e:
+            raise e
+            
+        if return_code != 0:
+            print("Error Executing Docker Command")
+            print("Command: %s" % command)
+            print("Result: [%s] %s" % (return_code, text))
+            exit()

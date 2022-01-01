@@ -1,6 +1,8 @@
+import os
 from core.models.Module import Module
 from plugins.RemoteOffice.Template import Template as BasePlugin
 from core.models.Settings import Settings
+import time
 
 from . import functions as ROLdapFunctions
 
@@ -78,7 +80,9 @@ class Plugin(BasePlugin):
 
     # Used to append the plugin's docker service if it exists.
     def appendDockerService(self, docker_compose_file = 'docker-compose.yml', install_dir = './office'):
-        contents = ROLdapFunctions.dockerFile()
+        RemoteOfficeModule = Module.select().where(Module.name == 'RemoteOffice').get()
+        domain = Settings.select().where(Settings.plugin == RemoteOfficeModule, Settings.key == 'domain_name').get().value
+        contents = ROLdapFunctions.dockerFile(domain)
         self.appendContentsToFile(contents, docker_compose_file, install_dir)
 
 
@@ -94,6 +98,8 @@ class Plugin(BasePlugin):
     # This is useful if you need to preform API calls to finalize the config
     #   for this plugin; but need to wait for another plugin to launch first
     def preLaunchConfig(self, install_dir = './office'):
+        if not self.promptRequired('post-launch'):
+            return
         # Get Domain
         RemoteOfficeModule = Module.select().where(Module.name == 'RemoteOffice').get()
         domain = Settings.select().where(Settings.plugin == RemoteOfficeModule, Settings.key == 'domain_name').get().value
@@ -110,14 +116,30 @@ class Plugin(BasePlugin):
     # Preform the actual launching of docker container for this plugin
     def launchDockerService(self):
         self.events.emit("RO.launch", "ldap")
+        time.sleep(5)
+        self.waitToBeReady()
         pass
+
+    def waitToBeReady(self):
+        command = "ldapsearch -b %s -H ldapi://" % self.getSetting('base_dn')
+        print("[%s] Waiting for LDAP to be Ready..." % self.getName(), end="", flush=True)
+        ready = False
+        while not ready:
+            try:
+                self.events.emit("RO.command", "ldap", command)
+                ready=True
+            except:
+                print(".", end='', flush=True)
+                time.sleep(2)
+        print()
 
     # Preform any post launch for this container.
     # Ensure API's are up
     # Change default passwords, Etc...
     def postLaunchConfig(self, install_dir = './office'):
-        if self.promptRequired('post-launch'):
-            Settings.create(plugin = self.module, key = 'post-launch', value='True')
+        if not self.promptRequired('post-launch'):
+            return
+        Settings.create(plugin = self.module, key = 'post-launch', value='True')
 
         # Ensure we can connect
 
@@ -127,13 +149,20 @@ class Plugin(BasePlugin):
             'ldap', 
             'ldapadd -H ldapi:/// -D cn=config -w %s -f /assets/S7K-LDIF/postfix.schema' % self.getSetting('config_pass')
         )
-        self.events.emit(
-            'RO.command', 
-            'ldap', 
-            'for f in /assets/S7K-LDIF/*.ldif; ldapadd -H ldapi:/// -D cn=admin,%s -w %s -f $f; done' % (self.getSetting('base_dn'), self.getSetting('admin_pass'))
-        )
 
         # Inject remaining LDIFS in folder
+        for x in os.listdir(install_dir + '/init/ldap/ldifs'):
+            if x.endswith(".ldif"):
+            # Prints only text file present in My Folder
+                try:
+                    self.events.emit(
+                        'RO.command', 
+                        'ldap', 
+                        'ldapadd -H ldapi:/// -D cn=admin,%s -w %s -f /assets/S7K-LDIF/%s' % (self.getSetting('base_dn'), self.getSetting('admin_pass'), x)
+                    )
+                except:
+                    print("ERROR LOADING LDIF %s" % x)
+                    exit()
 
     def createServiceAccount(self, user_name, user_password=None):
         if type(user_name) == type([]):

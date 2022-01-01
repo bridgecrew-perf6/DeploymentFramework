@@ -12,14 +12,16 @@ class Plugin(BasePlugin):
         'RO.settings': 'preformPrompts',
         'RO.install': 'preformInstall',
         'RO.launch': 'launchContainer',
-        'RO.command': 'runCommand'
+        'RO.command': 'runCommand',
+        'RO.CLEAN': 'resetOffice'
     }
 
     availableCommands = {
         'RO.settings': 'Prompt the User for Configuration Settings',
         'RO.install': 'After gathering required setting; preform the install',
         'RO.launch': 'Launch a specific container',
-        'RO.command': 'Run a command on a specific container'
+        'RO.command': 'Run a command on a specific container',
+        'RO.CLEAN': 'Removes all directories and config files for the remote office'
     }
 
     pluginModels = []
@@ -61,6 +63,8 @@ class Plugin(BasePlugin):
 
     def preformInstall(self, args=[]):
 
+        self.preformPrompts()
+
         install_dir = Settings.select().where(Settings.plugin == self.module, Settings.key == 'install_dir').get().value
 
         if not os.path.exists("%s/storage/" % install_dir):
@@ -96,3 +100,10 @@ class Plugin(BasePlugin):
     def runCommand(self, container_name, command):
         install_dir = Settings.select().where(Settings.plugin == self.module, Settings.key == 'install_dir').get().value
         self.events.emit("docker.exec", install_dir, container_name, command)
+
+    def resetOffice(self):
+        import shutil
+        install_dir = Settings.select().where(Settings.plugin == self.module, Settings.key == 'install_dir').get().value
+        self.events.emit("docker.down", install_dir)
+        shutil.rmtree(install_dir)
+        os.remove('config.db')

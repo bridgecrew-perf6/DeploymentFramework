@@ -16,11 +16,12 @@ def sha512_crypt(password, salt=None, rounds=None):
         prefix += 'rounds={0}$'.format(rounds)
     return crypt.crypt(password, prefix + salt)
 
-def dockerFile():
+def dockerFile(domain):
     return """
   ldap:
     image: tiredofit/openldap:latest
     restart: unless-stopped
+    hostname: ldap.%s
     volumes:
       - ./storage/ldap/data:/var/lib/openldap
       - ./storage/ldap/config:/etc/openldap/slapd.d
@@ -29,7 +30,7 @@ def dockerFile():
       - ./storage/ldap/backup:/data/backup
     env_file:
       - ./envs/ldap.env
-"""
+""" % domain
 
 def envFile(domain, organization, admin_pass, config_pass):
     return """DOMAIN=%s
@@ -75,7 +76,7 @@ cn: %s
 objectClass: simpleSecurityObject
 objectClass: organizationalRole
 userpassword: {CRYPT}%s
-""" % (base_dn, username, username, sha512_crypt(password))
+""" % (username, base_dn, username, sha512_crypt(password))
 
 def postfixSchema():
   return """
@@ -146,7 +147,8 @@ olcObjectClasses: ( 1.3.6.1.4.1.29426.1.2.2.2 NAME 'PostfixBookMailForward'
   DESC 'Mail forward used in Postfix Book'
   MUST ( mail $ mailAlias )
   MAY ( mailForwardingAddress ))
-  """
+
+"""
 
 def initialLDIF(base_dn, domain_name, it_password):
     return """
@@ -215,6 +217,7 @@ dn: ou=Mail,ou=Groups,%s
 objectclass: organizationalUnit
 objectclass: top
 ou: Mail
+
 """ % (
    base_dn, base_dn, base_dn, base_dn, domain_name, domain_name, sha512_crypt(it_password), base_dn, base_dn, base_dn, base_dn, base_dn, base_dn
 )

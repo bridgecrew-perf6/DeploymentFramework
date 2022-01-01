@@ -1,13 +1,15 @@
 from core.models.Module import Module
 from plugins.RemoteOffice.Template import Template as BasePlugin
 from core.models.Settings import Settings
+import requests
+import time
 
 from . import functions as ROProxyFunctions
 
 class Plugin(BasePlugin):
 
     listenForEvents = {
-        #'RO.postgresql.createDatabase': 'createDatabase',
+        'RO.proxy.createHost': 'createHost',
     }
 
     availableCommands = {
@@ -31,7 +33,7 @@ class Plugin(BasePlugin):
             },
             {
                 'type': 'password',
-                'name': 'database_user',
+                'name': 'new_pass',
                 'message': '[%s] New password for login:' % str.upper(self.getName()),
             },
             {
@@ -43,13 +45,13 @@ class Plugin(BasePlugin):
             {
                 'type': 'input',
                 'name': 'database_user',
-                'message': '[%s] New user name:' % str.upper(self.getName()),
+                'message': '[%s] New database user name:' % str.upper(self.getName()),
                 'default': 'proxy'
             },
             {
                 'type': 'password',
                 'name': 'database_password',
-                'message': '[%s] New user\'s password:' % str.upper(self.getName())
+                'message': '[%s] New database user password:' % str.upper(self.getName())
             },
 
         ]
@@ -91,16 +93,82 @@ class Plugin(BasePlugin):
     # This is useful if you need to preform API calls to finalize the config
     #   for this plugin; but need to wait for another plugin to launch first
     def preLaunchConfig(self, install_dir = './office'):
+        if not self.promptRequired('post-launch'):
+            return
         pass
 
     # Preform the actual launching of docker container for this plugin
     def launchDockerService(self):
         self.events.emit("RO.launch", "proxy")
-        pass
+        time.sleep(2)
 
     # Preform any post launch for this container.
     # Ensure API's are up
     # Change default passwords, Etc...
     def postLaunchConfig(self, install_dir = './office'):
-        if self.promptRequired('post-launch'):
-            Settings.create(plugin = self.module, key = 'post-launch', value='True')
+        if not self.promptRequired('post-launch'):
+            return
+        self.updateDefaultUser()
+
+        Settings.create(plugin = self.module, key = 'post-launch', value='True')
+
+    def updateDefaultUser(self):
+        token = None
+        while token is None:
+            token = ROProxyFunctions.getToken(user_name = 'admin@example.com', user_password = 'changeme')
+        print()
+        
+        print("[%s] Updating Username"%self.getName())
+        username_update_data={
+            'name': 'IT Support',
+            'nickname': 'Admin',
+            'email': '%s' % self.getSetting('new_email'),
+            'roles': ['admin'],
+            'is_disabled': False
+        }
+        r = requests.put('http://127.0.0.1:81/api/users/1', json=username_update_data, headers={'Authorization': 'Bearer %s' % token} )
+
+        print("[%s] Updating Password"%self.getName())
+        password_update_data={
+            'type': 'password',
+            'current': 'changeme',
+            'secret': '%s' % self.getSetting('new_pass')
+        }
+        r = requests.put('http://127.0.0.1:81/api/users/1/auth', json=password_update_data, headers={'Authorization': 'Bearer %s' % token} )
+
+    def createHost(self, subdomain, host, port, cert=None):
+        RemoteOfficeModule = Module.select().where(Module.name == 'RemoteOffice').get()
+        domain = Settings.select().where(Settings.plugin == RemoteOfficeModule, Settings.key == 'domain_name').get().value
+        token = ROProxyFunctions.getToken(user_name = self.getSetting('new_email'), user_password = self.getSetting('new_pass'))
+
+        if cert is None:
+            cert='new'
+
+        payload = {
+            "domain_names": ["%s.%s" % (subdomain, domain)],
+            "forward_scheme": "https",
+            "forward_host": host,
+            "forward_port": port,
+            "allow_websocket_upgrade": True,
+            "access_list_id": "0",
+            "certificate_id": cert,
+            "meta": {
+                "letsencrypt_email": "itsupport@%s" % domain,
+                "letsencrypt_agree": True,
+                "dns_challenge": False
+            },
+            "advanced_config": "",
+            "locations": [],
+            "block_exploits": False,
+            "caching_enabled": False,
+            "http2_support": True,
+            "hsts_enabled": True,
+            "hsts_subdomains": False,
+            "ssl_forced": True
+        }
+
+        r = requests.post("http://127.0.0.1:81/api/nginx/proxy-hosts", json=payload, headers={'Authorization': 'Bearer %s' % token})
+        if r.status_code != 200:
+            print("Error!")
+            print(r.json())
+            exit()

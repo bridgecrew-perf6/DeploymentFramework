@@ -15,26 +15,30 @@ Docker:
 
 RemoteOffice:
   enabled: true
-  # install_dir: ./office
-  # domain_name: sniper7kills.com
+  install_dir: ./office
+  domain_name: sniper7kills.com
 
 # RO INIT 10
 
 RO-ldap:
   enabled: true
+  organization_name: Sniper7Kills LLC
+  admin_pass: SecurePassword
+  config_pass: SecurePassword
+  it_password: SecurePassword
 
 RO-mariadb:
   enabled: true
-  # root_password: SecurePassword
-  # default_database: DB_Name
-  # default_user: DB_User
-  # default_pass: SecurePassword
+  root_password: SecurePassword
+  default_database: DB_Name
+  default_user: DB_User
+  default_password: SecurePassword
 
 RO-postgresql:
   enabled: true
-  # default_database: DB_Name
-  # default_user: DB_User
-  # default_pass: SecurePassword
+  default_database: DB_Name
+  default_user: DB_User
+  default_password: SecurePassword
 
 RO-redis:
   enabled: true
@@ -46,8 +50,20 @@ RO-cache:
 
 RO-proxy:
   enabled: true
-  # new_mail: admin@sniper7kills.com
-  # new_password: SecurePassword
-  # database_name: DB_Name
-  # database_user: DB_User
-  # database_pass: SecurePassword 
+  new_email: admin@sniper7kills.com
+  new_pass: P@22word
+  database_name: proxy
+  database_user: proxy
+  database_password: SecurePassword
+
+RO-sso:
+  enabled: true
+  image: goauthentik.io/server
+  tag: 2021.12.4
+  db_name: authentik
+  db_user: authentik
+  db_pass: SecurePassword
+  secret_key: SomeLongSecureEncryptionSecretKey
+  admin_pass: SecurePassword
+  admin_token: SomeLongSecureToken
+  ldap_password: SecurePassword
