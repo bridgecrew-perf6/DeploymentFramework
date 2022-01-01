@@ -63,7 +63,7 @@ class Plugin(BasePlugin):
         #print("[TODO] Start Docker Container In %s Named %s" % (launch_location, container_name))
         launchCommand = ["docker-compose","up","-d", container_name]
         try:
-            result = subprocess.Popen(launchCommand, cwd=launch_location, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            result = subprocess.Popen(launchCommand, cwd=launch_location)
             text = result.communicate()[0]
             return_code = result.returncode
         except Exception as e:

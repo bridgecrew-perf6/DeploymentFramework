@@ -3,6 +3,7 @@ from plugins.RemoteOffice.Template import Template as BasePlugin
 from core.models.Settings import Settings
 import requests
 import time
+import os
 
 from . import functions as ROProxyFunctions
 
@@ -136,17 +137,20 @@ class Plugin(BasePlugin):
         }
         r = requests.put('http://127.0.0.1:81/api/users/1/auth', json=password_update_data, headers={'Authorization': 'Bearer %s' % token} )
 
-    def createHost(self, subdomain, host, port, cert=None):
+    def createHost(self, subdomain, host, port, scheme='https', cert=None):
         RemoteOfficeModule = Module.select().where(Module.name == 'RemoteOffice').get()
         domain = Settings.select().where(Settings.plugin == RemoteOfficeModule, Settings.key == 'domain_name').get().value
         token = ROProxyFunctions.getToken(user_name = self.getSetting('new_email'), user_password = self.getSetting('new_pass'))
 
         if cert is None:
-            cert='new'
+            if os.path.exists('./certs/%s' % subdomain + '.' + domain):
+                cert = self.importCertificate(subdomain + '.' + domain)
+            else:
+                cert='new'
 
         payload = {
             "domain_names": ["%s.%s" % (subdomain, domain)],
-            "forward_scheme": "https",
+            "forward_scheme": scheme,
             "forward_host": host,
             "forward_port": port,
             "allow_websocket_upgrade": True,
@@ -168,7 +172,35 @@ class Plugin(BasePlugin):
         }
 
         r = requests.post("http://127.0.0.1:81/api/nginx/proxy-hosts", json=payload, headers={'Authorization': 'Bearer %s' % token})
-        if r.status_code != 200:
-            print("Error!")
+        if r.status_code != 201:
+            print("Error Creating Proxy Host %s.%s" % (subdomain, domain))
             print(r.json())
             exit()
+
+    def importCertificate(self, certName):
+        token = ROProxyFunctions.getToken(user_name = self.getSetting('new_email'), user_password = self.getSetting('new_pass'))
+        payload = {
+            "nice_name": certName,
+            "provider": "other"
+        }
+        response = requests.post("http://127.0.0.1:81/api/nginx/certificates", json=payload, headers={"Authorization": "Bearer %s" % token})
+        if response.status_code != 201:
+            print("  [PROXY] Error Creating Cert Entry...")
+            exit()
+        certID = response.json()['id']
+
+        url = "http://127.0.0.1:81/api/nginx/certificates/%s/upload" % certID
+
+        headers = {
+            "Authorization": "Bearer %s" % token
+        }
+        files = {
+            'certificate': open('./certs/%s' % certName,'rb'),
+            'certificate_key': open('./certs/%s.key' % certName,'rb'),
+        }
+        response = requests.request("POST", url, files=files, headers=headers)
+        if response.status_code != 200:
+            print("  [PROXY] Error Uploading to Cert Entry...")
+            exit()
+
+        return certID
