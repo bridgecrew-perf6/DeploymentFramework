@@ -36,6 +36,7 @@ def getToken(user_name, user_password):
           r = requests.post('http://127.0.0.1:81/api/tokens', json=jsondata)
           if r.status_code == 200:
               response = r.json()
+              print()
               return response['token']
           else:
               print(".", end="", flush=True)

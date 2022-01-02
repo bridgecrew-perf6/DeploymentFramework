@@ -12,6 +12,7 @@ class Plugin(BasePlugin):
     listenForEvents = {
         'docker.start': 'startDockerContainer',
         'docker.exec': 'executeDockerCommand',
+        'docker.exec.user': 'executeDockerCommandAsUser',
         'docker.stop': 'stopDockerContainer',
         'docker.rebuild': 'rebuildDockerContainer',
         'docker.down':  'downDockerEnvironment'
@@ -79,7 +80,6 @@ class Plugin(BasePlugin):
         for word in command:
             launchCommand.append(word)
 
-        # print("[TODO] Run Command in [%s] Container [%s] [%s]" % (launch_location, container_name, launchCommand))
         try:
             result = subprocess.Popen(launchCommand, cwd=launch_location, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
             text = result.communicate()[0]
@@ -89,11 +89,24 @@ class Plugin(BasePlugin):
 
         if return_code != 0:
             raise Exception("Non 0 Return")
-            
-        # if return_code != 0:
-        #     print("Error Executing Docker Command")
-        #     print("Command: %s" % command)
-        #     print("Result: [%s] %s" % (return_code, text))
+
+    def executeDockerCommandAsUser(self, launch_location, container_name, user, command):
+        command = command.split(" ")
+        launchCommand = ["docker-compose","exec", "--user", user, container_name]
+        for word in command:
+            launchCommand.append(word.replace("%%SPACE%", " "))
+        try:
+            print(launchCommand)
+            result = subprocess.Popen(launchCommand, cwd=launch_location, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            text = result.communicate()[0]
+            return_code = result.returncode
+        except Exception as e:
+            raise e
+
+        if return_code != 0:
+            print("Error Executing Docker Command")
+            print("Result: [%s] %s" % (return_code, text))
+            #exit()
 
     def stopDockerContainer(self, launch_location, container_name):
         pass

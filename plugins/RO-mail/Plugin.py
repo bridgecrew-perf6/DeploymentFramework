@@ -28,7 +28,7 @@ class Plugin(BasePlugin):
             {
                 'type': 'password',
                 'name': 'client_secret',
-                'message': '[%s] New Password for MAIL-BIND LDAP account:' % str.upper(self.getName()),
+                'message': '[%s] New OAUTH Provider SECRET:' % str.upper(self.getName()),
                 'default': self.generateRandomString(150)
             }
         ]
@@ -85,6 +85,8 @@ class Plugin(BasePlugin):
     # This is useful if you need to preform API calls to finalize the config
     #   for this plugin; but need to wait for another plugin to launch first
     def preLaunchConfig(self, install_dir = './office'):
+        if not self.promptRequired('post-launch'):
+            return
         RemoteOfficeModule = Module.select().where(Module.name == 'RemoteOffice').get()
         domain = Settings.select().where(Settings.plugin == RemoteOfficeModule, Settings.key == 'domain_name').get().value
 
@@ -109,5 +111,6 @@ class Plugin(BasePlugin):
     # Ensure API's are up
     # Change default passwords, Etc...
     def postLaunchConfig(self, install_dir = './office'):
-        # See preLaunchConfig
-        pass
+        if not self.promptRequired('post-launch'):
+            return
+        Settings.create(plugin = self.module, key = 'post-launch', value='True')

@@ -13,6 +13,7 @@ class Plugin(BasePlugin):
         'RO.install': 'preformInstall',
         'RO.launch': 'launchContainer',
         'RO.command': 'runCommand',
+        'RO.command.user': 'runUserCommand',
         'RO.CLEAN': 'resetOffice'
     }
 
@@ -21,6 +22,7 @@ class Plugin(BasePlugin):
         'RO.install': 'After gathering required setting; preform the install',
         'RO.launch': 'Launch a specific container',
         'RO.command': 'Run a command on a specific container',
+        'RO.command.user': 'Run a command on a specific container as a specific user',
         'RO.CLEAN': 'Removes all directories and config files for the remote office'
     }
 
@@ -100,6 +102,10 @@ class Plugin(BasePlugin):
     def runCommand(self, container_name, command):
         install_dir = Settings.select().where(Settings.plugin == self.module, Settings.key == 'install_dir').get().value
         self.events.emit("docker.exec", install_dir, container_name, command)
+
+    def runUserCommand(self, container_name, user, command):
+        install_dir = Settings.select().where(Settings.plugin == self.module, Settings.key == 'install_dir').get().value
+        self.events.emit("docker.exec.user", install_dir, container_name, user, command)
 
     def resetOffice(self):
         import shutil

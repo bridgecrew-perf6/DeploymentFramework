@@ -9,10 +9,12 @@ class Plugin(BasePlugin):
 
     listenForEvents = {
         'RO.sso.createOauthApplication': 'createOauthApplication',
+        'RO.sso.createSAMLApplication': 'createSAMLApplication',
     }
 
     availableCommands = {
-        'RO.sso.createOauthApplication': 'Create a new OAuth based Application'
+        'RO.sso.createOauthApplication': 'Create a new OAuth based Application',
+        'RO.sso.createSAMLApplication': 'Create a new SAML based Application'
     }
 
     # Requires Redis + PostGresql + LDAP + Proxy
@@ -52,7 +54,7 @@ class Plugin(BasePlugin):
                 'name': 'db_pass',
                 'message': '[SSO] New Password for SSO Service POSTGRESQL User',
             },
-                        {
+            {
                 'type': 'password',
                 'name': 'secret_key',
                 'message': '[SSO] New Secret Key',
@@ -147,7 +149,7 @@ class Plugin(BasePlugin):
         RemoteOfficeModule = Module.select().where(Module.name == 'RemoteOffice').get()
         domain = Settings.select().where(Settings.plugin == RemoteOfficeModule, Settings.key == 'domain_name').get().value
         
-        r = requests.get('https://sso.%s/api/v3/flows/instances/default-authentication-flow/'% domain, headers={'Authorization': "Bearer %s" % self.getSetting('admin_token')}, verify=False)
+        r = requests.get('https://sso.%s/api/v3/flows/instances/default-provider-authorization-implicit-consent/'% domain, headers={'Authorization': "Bearer %s" % self.getSetting('admin_token')}, verify=False)
         return r.json()['pk']
 
     def getOauthPropertyMappings(self):
@@ -188,6 +190,55 @@ class Plugin(BasePlugin):
             r = requests.put('https://sso.%s/api/v3/providers/oauth2/%s' % (domain, provider_id), json=r.json(), headers={'Authorization': "Bearer %s" % self.getSetting('admin_token')}, verify=False)
             return provider_id
 
+    def getSAMLPropertyMappings(self):
+        RemoteOfficeModule = Module.select().where(Module.name == 'RemoteOffice').get()
+        domain = Settings.select().where(Settings.plugin == RemoteOfficeModule, Settings.key == 'domain_name').get().value
+        
+        r = requests.get('https://sso.%s/api/v3/propertymappings/all/?search=SAML'% domain, headers={'Authorization': "Bearer %s" % self.getSetting('admin_token')}, verify=False)
+        response = r.json()['results']
+        keys = []
+        for mapping in response:
+            keys.append(mapping['pk'])
+        return keys
+
+    def createSAMLProvider(self, name, acs_url, audience, sp_binding):
+        RemoteOfficeModule = Module.select().where(Module.name == 'RemoteOffice').get()
+        domain = Settings.select().where(Settings.plugin == RemoteOfficeModule, Settings.key == 'domain_name').get().value
+
+        data = {
+            'name': name,
+            'authorization_flow': self.getDefaultFlowID(),
+            'property_mappings': self.getSAMLPropertyMappings(),
+            'acs_url': acs_url,
+            'issuer': 'https://sso.%s' % domain,
+            'sp_binding': sp_binding,
+            'audience': audience,
+            'signing_kp': self.getDefaultCertID()
+        }
+
+        r = requests.post('https://sso.%s/api/v3/providers/saml/' % domain, json=data, headers={'Authorization': "Bearer %s" % self.getSetting('admin_token')}, verify=False)
+        if r.status_code != 201:
+            print(r.json())
+            exit()
+        else:
+            provider_id = r.json()['pk']
+            r = requests.get('https://sso.%s/api/v3/providers/saml/%s' % (domain, provider_id), headers={'Authorization': "Bearer %s" % self.getSetting('admin_token')}, verify=False)
+            r = requests.put('https://sso.%s/api/v3/providers/saml/%s' % (domain, provider_id), json=r.json(), headers={'Authorization': "Bearer %s" % self.getSetting('admin_token')}, verify=False)
+            return provider_id
+
+    def getDefaultCertID(self):
+        RemoteOfficeModule = Module.select().where(Module.name == 'RemoteOffice').get()
+        domain = Settings.select().where(Settings.plugin == RemoteOfficeModule, Settings.key == 'domain_name').get().value
+
+        r = requests.get('https://sso.%s/api/v3/crypto/certificatekeypairs/' % domain, headers={'Authorization': "Bearer %s" % self.getSetting('admin_token')}, verify=False)
+        response = r.json()
+
+        r = requests.get("https://sso.%s/%s" % (domain, response['results'][0]['certificate_download_url']), headers={'Authorization': "Bearer %s" % self.getSetting('admin_token')}, verify=False)
+        cert = r.text.replace('\r','').replace('\n','')
+        Settings.create(plugin = self.module, key = 'default-cert', value=cert)
+
+        return response['results'][0]['pk']
+
     def createOauthApplication(self, name, slug, launch_url, launch_description, client_id, client_secret, redirection_uri = None, launch_provider = None):
         RemoteOfficeModule = Module.select().where(Module.name == 'RemoteOffice').get()
         domain = Settings.select().where(Settings.plugin == RemoteOfficeModule, Settings.key == 'domain_name').get().value
@@ -207,3 +258,21 @@ class Plugin(BasePlugin):
             print()
             exit()
         
+    def createSAMLApplication(self, name, slug, launch_url, launch_description, acs_url, audience, sp_binding='post', launch_provider = None):
+        RemoteOfficeModule = Module.select().where(Module.name == 'RemoteOffice').get()
+        domain = Settings.select().where(Settings.plugin == RemoteOfficeModule, Settings.key == 'domain_name').get().value
+        data = {
+            'name': name,
+            'slug': slug,
+            'provider': self.createSAMLProvider("%s SAML Provider" % name, acs_url, audience, sp_binding),
+            "meta_launch_url": launch_url,
+            "meta_description": launch_description,
+            "policy_engine_mode": "all"
+        }
+        if launch_provider is not None:
+            data['launch_provider'] = launch_provider
+
+        r = requests.post('https://sso.%s/api/v3/core/applications/' % domain, json=data, headers={'Authorization': "Bearer %s" % self.getSetting('admin_token')}, verify=False)
+        if r.status_code != 201:
+            print()
+            exit()

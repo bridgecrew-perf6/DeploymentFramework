@@ -76,3 +76,12 @@ RO-mail:
   ldap_password: SecurePassword
   # client_id: SomeVeryLongAndSecureString
   # client_secret:SomeVeryVeryLongAndSecureString
+
+RO-cloud:
+  enabled: true
+  admin_user: admin
+  admin_pass: SecurePassword
+  db_name: cloud
+  db_user: cloud
+  db_pass: SecurePassword
+  ldap_pass: SecurePassword
