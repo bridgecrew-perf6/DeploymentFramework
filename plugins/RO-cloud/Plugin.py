@@ -7,13 +7,15 @@ from . import functions as ROCloudFunctions
 
 class Plugin(BasePlugin):
 
-    # listenForEvents = {
-    #     'RO.mariadb.createDatabase': 'createDatabase',
-    # }
+    listenForEvents = {
+        'RO.cloud.enableApp': 'enableApp',
+        'RO.cloud.setAppSetting': 'setAppSetting'
+    }
 
-    # availableCommands = {
-    #     'RO.mariadb.createDatabase': 'Create a new Database'
-    # }
+    availableCommands = {
+        'RO.cloud.enableApp': 'Enable an app in the Cloud',
+        'RO.cloud.setAppSetting': 'Configures a specific setting for an app'
+    }
 
     # The RO Base is 0; We need to be above that...
     priority = 30
@@ -151,8 +153,20 @@ class Plugin(BasePlugin):
         RemoteOfficeModule = Module.select().where(Module.name == 'RemoteOffice').get()
         domain = Settings.select().where(Settings.plugin == RemoteOfficeModule, Settings.key == 'domain_name').get().value
 
+        # TALK Server
+        self.enableApp('spreed')
+
+        # Group Folders
+        self.enableApp('groupfolders')
+
+        # Tasks
+        self.enableApp('tasks')
+
+        # calendar
+        self.enableApp('calendar')
+
         # SAML
-        self.events.emit("RO.command.user", "cloud", "www-data", "php occ app:enable user_saml -f")
+        self.enableApp('user_saml')
         self.events.emit("RO.sso.createSAMLApplication", 
                 "Cloud",
                 "cloud",
@@ -188,3 +202,9 @@ class Plugin(BasePlugin):
 
 
         Settings.create(plugin = self.module, key = 'post-launch', value='True')
+
+    def enableApp(self, app_name):
+        self.events.emit("RO.command.user", "cloud", "www-data", "php occ app:enable %s -f" % app_name)
+
+    def setAppSetting(self, app_name, setting, value):
+        self.events.emit("RO.command.user", "cloud", "www-data", "php occ config:app:set --value=%s %s %s" % (value, app_name, setting))

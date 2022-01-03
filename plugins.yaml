@@ -85,3 +85,8 @@ RO-cloud:
   db_user: cloud
   db_pass: SecurePassword
   ldap_pass: SecurePassword
+
+# INIT 40
+
+RO-office:
+  enabled: true
