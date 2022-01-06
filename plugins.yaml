@@ -90,3 +90,35 @@ RO-cloud:
 
 RO-office:
   enabled: true
+
+RO-phoneserver:
+  enabled: true
+  db_name: asterisk
+  db_user: asterisk
+  db_pass: SecurePassword
+
+RO-phpmyadmin:
+  enabled: true
+
+RO-phpldapadmin:
+  enabled: true
+
+RO-wordpress:
+  enabled: true
+  database_name: wordpress
+  database_user: wordpress
+  database_password: SecurePassword
+  title: Sniper7Kills LLC
+  admin_user: admin
+  admin_email: itsupport@sniper7kills.com
+  admin_password: SecurePassword
+  # client_id: SomeVeryLongAndSecureString
+  # client_secret:SomeVeryVeryLongAndSecureString
+
+RO-guacamole:
+  enabled: true
+  database_name: guacamole
+  database_user: guacamole
+  database_password: SecurePassword
+  # client_id: SomeVeryLongAndSecureString
+  # client_secret:SomeVeryVeryLongAndSecureString

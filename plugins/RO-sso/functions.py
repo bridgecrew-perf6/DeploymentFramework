@@ -72,7 +72,7 @@ def getLDAPGroups(domain, token):
     import urllib3
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
     
-    for x in range(10):
+    for x in range(20):
         try:
             url = "https://sso.%s/api/v3/propertymappings/ldap" % domain
             r = requests.get(url, headers={'Authorization': "Bearer %s" % token}, verify=False)
@@ -93,6 +93,7 @@ def getLDAPGroups(domain, token):
         except Exception as e:
             # print("LDAP GROUPS - EXCEPTION")
             time.sleep(5)
+    print(r)
     print("Error... Exiting...")
     exit()
 

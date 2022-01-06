@@ -88,9 +88,16 @@ class Plugin(BasePlugin):
     # Used to initialize any any configuration settings that need to be deployed
     def createInitialConfig(self, install_dir = './office'):
 
-        self.events.emit('RO.postgresql.createDatabase', self.getSetting('db_name'), self.getSetting('db_user'), self.getSetting('db_pass'))
+        if self.promptRequired('ldap-created'):
+            self.events.emit('RO.postgresql.createDatabase', self.getSetting('db_name'), self.getSetting('db_user'), self.getSetting('db_pass'))
+            Settings.create(plugin = self.module, key = 'ldap-created', value='True')
+        
 
-        self.events.emit('RO.ldap.createServiceAccount', 'CLOUD-BIND', self.getSetting('ldap_pass'))
+
+        if self.promptRequired('db-created'):
+            self.events.emit('RO.ldap.createServiceAccount', 'CLOUD-BIND', self.getSetting('ldap_pass'))
+            Settings.create(plugin = self.module, key = 'db-created', value='True')
+        
 
         # ENV File
         RemoteOfficeModule = Module.select().where(Module.name == 'RemoteOffice').get()
@@ -107,11 +114,12 @@ class Plugin(BasePlugin):
     # This is useful if you need to preform API calls to finalize the config
     #   for this plugin; but need to wait for another plugin to launch first
     def preLaunchConfig(self, install_dir = './office'):
-        if not self.promptRequired('post-launch'):
+        if not self.promptRequired('pre-launch'):
             return
+        
 
         self.events.emit('RO.proxy.createHost', 'cloud', 'cloud', '80', 'http')
-        pass
+        Settings.create(plugin = self.module, key = 'pre-launch', value='True')
 
     # Preform the actual launching of docker container for this plugin
     def launchDockerService(self):

@@ -85,7 +85,10 @@ class Plugin(BasePlugin):
         contents = ROProxyFunctions.envFile(self.getSetting('database_name'), self.getSetting('database_user'), self.getSetting('database_password'))
         self.writeContentsToFile(contents, 'envs/proxy.env', install_dir)
 
-        self.events.emit("RO.mariadb.createDatabase", self.getSetting('database_name'), self.getSetting('database_user'), self.getSetting('database_password'))
+        if self.promptRequired('db-created'):
+            self.events.emit("RO.mariadb.createDatabase", self.getSetting('database_name'), self.getSetting('database_user'), self.getSetting('database_password'))
+            Settings.create(plugin = self.module, key = 'db-created', value='True')
+        
         
 
 
@@ -94,9 +97,9 @@ class Plugin(BasePlugin):
     # This is useful if you need to preform API calls to finalize the config
     #   for this plugin; but need to wait for another plugin to launch first
     def preLaunchConfig(self, install_dir = './office'):
-        if not self.promptRequired('post-launch'):
+        if not self.promptRequired('pre-launch'):
             return
-        pass
+        Settings.create(plugin = self.module, key = 'pre-launch', value='True')
 
     # Preform the actual launching of docker container for this plugin
     def launchDockerService(self):

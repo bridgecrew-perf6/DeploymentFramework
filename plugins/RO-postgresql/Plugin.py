@@ -76,9 +76,9 @@ class Plugin(BasePlugin):
     # This is useful if you need to preform API calls to finalize the config
     #   for this plugin; but need to wait for another plugin to launch first
     def preLaunchConfig(self, install_dir = './office'):
-        if not self.promptRequired('post-launch'):
+        if not self.promptRequired('pre-launch'):
             return
-        pass
+        Settings.create(plugin = self.module, key = 'pre-launch', value='True')
 
     # Preform the actual launching of docker container for this plugin
     def launchDockerService(self):

@@ -100,7 +100,7 @@ class Plugin(BasePlugin):
     # This is useful if you need to preform API calls to finalize the config
     #   for this plugin; but need to wait for another plugin to launch first
     def preLaunchConfig(self, install_dir = './office'):
-        if not self.promptRequired('post-launch'):
+        if not self.promptRequired('pre-launch'):
             return
         # Get Domain
         RemoteOfficeModule = Module.select().where(Module.name == 'RemoteOffice').get()
@@ -113,6 +113,8 @@ class Plugin(BasePlugin):
         # Initial ldif population
         contents = ROLdapFunctions.initialLDIF(self.getSetting('base_dn'), domain, self.getSetting('it_password'))
         self.writeContentsToFile(contents, 'init/ldap/ldifs/initial.load', install_dir)
+
+        Settings.create(plugin = self.module, key = 'pre-launch', value='True')
         
 
     # Preform the actual launching of docker container for this plugin

@@ -103,9 +103,13 @@ class Plugin(BasePlugin):
 
     # Used to initialize any any configuration settings that need to be deployed
     def createInitialConfig(self, install_dir = './office'):
-        self.events.emit('RO.postgresql.createDatabase', self.getSetting('db_name'), self.getSetting('db_user'), self.getSetting('db_pass'))
-
-        self.events.emit('RO.ldap.createServiceAccount', 'SSO-BIND', self.getSetting('ldap_password'))
+        if self.promptRequired('db-created'):
+            self.events.emit('RO.postgresql.createDatabase', self.getSetting('db_name'), self.getSetting('db_user'), self.getSetting('db_pass'))
+            Settings.create(plugin = self.module, key = 'db-created', value='True')
+        
+        if self.promptRequired('ldap-created'):
+            self.events.emit('RO.ldap.createServiceAccount', 'SSO-BIND', self.getSetting('ldap_password'))
+            Settings.create(plugin = self.module, key = 'ldap-created', value='True')
 
         contents = ROSSOFunctions.envFile(self.getSetting('secret_key'), self.getSetting('admin_pass'), 
             self.getSetting('admin_token'), self.getSetting('db_user'), self.getSetting('db_name'), self.getSetting('db_pass')
@@ -116,10 +120,12 @@ class Plugin(BasePlugin):
     # This is useful if you need to preform API calls to finalize the config
     #   for this plugin; but need to wait for another plugin to launch first
     def preLaunchConfig(self, install_dir = './office'):
-        if not self.promptRequired('post-launch'):
+        if not self.promptRequired('pre-launch'):
             return
         
         self.events.emit('RO.proxy.createHost', 'sso', 'sso-server', '9443')
+
+        Settings.create(plugin = self.module, key = 'pre-launch', value='True')
 
     # Preform the actual launching of docker container for this plugin
     def launchDockerService(self):

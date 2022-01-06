@@ -63,7 +63,9 @@ class Plugin(BasePlugin):
 
     # Used to initialize any any configuration settings that need to be deployed
     def createInitialConfig(self, install_dir = './office'):
-        self.events.emit('RO.ldap.createServiceAccount', 'MAIL-BIND', self.getSetting('ldap_password'))
+        if self.promptRequired('ldap-created'):
+            self.events.emit('RO.ldap.createServiceAccount', 'MAIL-BIND', self.getSetting('ldap_password'))
+            Settings.create(plugin = self.module, key = 'ldap-created', value='True')
 
         RemoteOfficeModule = Module.select().where(Module.name == 'RemoteOffice').get()
         domain = Settings.select().where(Settings.plugin == RemoteOfficeModule, Settings.key == 'domain_name').get().value
@@ -85,8 +87,9 @@ class Plugin(BasePlugin):
     # This is useful if you need to preform API calls to finalize the config
     #   for this plugin; but need to wait for another plugin to launch first
     def preLaunchConfig(self, install_dir = './office'):
-        if not self.promptRequired('post-launch'):
+        if not self.promptRequired('pre-launch'):
             return
+
         RemoteOfficeModule = Module.select().where(Module.name == 'RemoteOffice').get()
         domain = Settings.select().where(Settings.plugin == RemoteOfficeModule, Settings.key == 'domain_name').get().value
 
@@ -99,6 +102,8 @@ class Plugin(BasePlugin):
 
         contents = ROMailFunctions.dovecotOAuth(domain, self.getSetting('client_id'), self.getSetting('client_secret'))
         self.writeContentsToFile(contents, 'init/mailserver/dovecot-oauth2.conf.ext', install_dir)
+
+        Settings.create(plugin = self.module, key = 'pre-launch', value='True')
 
     # Preform the actual launching of docker container for this plugin
     def launchDockerService(self):
