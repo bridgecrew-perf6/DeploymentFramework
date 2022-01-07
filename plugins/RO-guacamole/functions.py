@@ -27,5 +27,6 @@ OPENID_AUTHORIZATION_ENDPOINT=https://sso.%s/application/o/authorize/
 OPENID_CLIENT_ID=%s
 OPENID_ISSUER=https://sso.%s/application/o/guacamole/
 OPENID_JWKS_ENDPOINT=https://sso.%s/application/o/guacamole/jwks/
-OPENID_REDIRECT_URI=https://desktop.%s/guacamole 
+OPENID_REDIRECT_URI=https://desktop.%s/guacamole/
 """ % (db_name, db_user, db_pass, domain, client_id, domain, domain, domain)
+

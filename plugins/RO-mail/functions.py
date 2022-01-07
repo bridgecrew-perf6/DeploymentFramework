@@ -4,10 +4,25 @@ def dockerFile():
     image: docker.io/mailserver/docker-mailserver:latest
     container_name: mailserver
     ports:
-      - "25:25"
-      - "143:143"
-      - "587:587"
-      - "993:993"
+      - target:    25
+        published: 25
+        protocol:  tcp
+        mode:      host
+
+      - target:    143
+        published: 143
+        protocol:  tcp
+        mode:      host
+
+      - target:    587
+        published: 587
+        protocol:  tcp
+        mode:      host
+
+      - target:    993
+        published: 993
+        protocol:  tcp
+        mode:      host
     volumes:
       - ./storage/mailserver/mail/:/var/mail/
       - ./storage/mailserver/state/:/var/mail-state/

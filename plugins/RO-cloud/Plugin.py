@@ -30,36 +30,35 @@ class Plugin(BasePlugin):
             {
                 'type': 'input',
                 'name': 'admin_user',
-                'message': '[%s] New Admin User' % domain,
+                'message': '[%s] New Admin User' % self.getName(),
                 'default': 'cloud'
             },
             {
-                'type': 'input',
+                'type': 'password',
                 'name': 'admin_pass',
-                'message': '[%s] New Admin Password' % domain,
-                'default': 'cloud'
+                'message': '[%s] New Admin Password' % self.getName(),
             },
             {
                 'type': 'input',
                 'name': 'db_name',
-                'message': '[%s] New POSTGRESQL Database for Cloud' % domain,
+                'message': '[%s] New POSTGRESQL Database for Cloud' % self.getName(),
                 'default': 'cloud'
             },
             {
                 'type': 'input',
                 'name': 'db_user',
-                'message': '[%s] New POSTGRESQL User for Cloud' % domain,
+                'message': '[%s] New POSTGRESQL User for Cloud' % self.getName(),
                 'default': 'cloud'
             },
             {
                 'type': 'password',
                 'name': 'db_pass',
-                'message': '[%s] New Password for User' % domain,
+                'message': '[%s] New Password for POSTGRESQL User' % self.getName(),
             },
             {
                 'type': 'password',
                 'name': 'ldap_pass',
-                'message': '[%s] New Password For CLOUD-BIND ldap account' % domain
+                'message': '[%s] New Password For CLOUD-BIND ldap account' % self.getName()
             }
 
         ]
