@@ -108,8 +108,6 @@ smtpd_sasl_type = dovecot
 smtpd_sasl_auth_enable = yes
 smtpd_sasl_path = private/auth
 smtpd_relay_restrictions = permit_mynetworks, permit_sasl_authenticated, reject_unauth_destination
-
-mynetworks = 
 """
 
 def webmailOAuth(domain, client_id, client_secret):
