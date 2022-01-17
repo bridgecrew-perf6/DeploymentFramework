@@ -110,6 +110,10 @@ class Plugin(BasePlugin):
         contents = ROLdapFunctions.postfixSchema()
         self.writeContentsToFile(contents, 'init/ldap/ldifs/postfix.schema', install_dir)
 
+        # permissions schema
+        contents = ROLdapFunctions.permissionsSchema()
+        self.writeContentsToFile(contents, 'init/ldap/ldifs/permissions.schema', install_dir)
+
         # Initial ldif population
         contents = ROLdapFunctions.initialLDIF(self.getSetting('base_dn'), domain, self.getSetting('it_password'))
         self.writeContentsToFile(contents, 'init/ldap/ldifs/initial.load', install_dir)
@@ -154,6 +158,14 @@ class Plugin(BasePlugin):
             'RO.command', 
             'ldap', 
             'ldapadd -H ldapi:/// -D cn=config -w %s -f /assets/S7K-LDIF/postfix.schema' % self.getSetting('config_pass')
+        )
+
+        self.waitToBeReady()
+        print("permissions.schema")
+        self.events.emit(
+            'RO.command', 
+            'ldap', 
+            'ldapadd -H ldapi:/// -D cn=config -w %s -f /assets/S7K-LDIF/permissions.schema' % self.getSetting('config_pass')
         )
 
         self.waitToBeReady()

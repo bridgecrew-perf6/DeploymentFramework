@@ -140,7 +140,7 @@ class Plugin(BasePlugin):
         }
         r = requests.put('http://127.0.0.1:81/api/users/1/auth', json=password_update_data, headers={'Authorization': 'Bearer %s' % token} )
 
-    def createHost(self, subdomain, host, port, scheme='https', cert=None):
+    def createHost(self, subdomain, host, port, scheme='https', cert=None, advance_config=""):
         RemoteOfficeModule = Module.select().where(Module.name == 'RemoteOffice').get()
         domain = Settings.select().where(Settings.plugin == RemoteOfficeModule, Settings.key == 'domain_name').get().value
         token = ROProxyFunctions.getToken(user_name = self.getSetting('new_email'), user_password = self.getSetting('new_pass'))
@@ -164,7 +164,7 @@ class Plugin(BasePlugin):
                 "letsencrypt_agree": True,
                 "dns_challenge": False
             },
-            "advanced_config": "",
+            "advanced_config": "%s" % advance_config,
             "locations": [],
             "block_exploits": False,
             "caching_enabled": False,

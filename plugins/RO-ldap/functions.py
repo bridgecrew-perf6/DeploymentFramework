@@ -59,7 +59,7 @@ TLS_CIPHER_SUITE=ECDH+AESGCM:DH+AESGCM:ECDH+AES256:DH+AES256:ECDH+AES128:DH+AES:
 TLS_VERIFY_CLIENT=never
 SSL_HELPER_PREFIX=ldap
 
-REMOVE_CONFIG_AFTER_SETUP=false
+REMOVE_CONFIG_AFTER_SETUP=true
 
 ENABLE_BACKUP=TRUE
 BACKUP_INTERVAL=0400
@@ -150,6 +150,14 @@ olcObjectClasses: ( 1.3.6.1.4.1.29426.1.2.2.2 NAME 'PostfixBookMailForward'
 
 """
 
+def permissionsSchema(base_dn):
+    return """dn: olcDatabase={1}mdb,cn=config
+changeType: modify
+add: olcAccess
+olcAccess: to attrs=userPassword,shadowLastChange by self =xw by dn="cn=admin,%s" write by anonymous auth by * none
+olcAccess: to * by self write by dn="cn=admin,%s" write by group.exact="cn=Administrators,ou=Security,ou=Groups,%s" write by * read
+"""
+
 def initialLDIF(base_dn, domain_name, it_password):
     return """
 dn: ou=Accounts,%s
@@ -177,7 +185,6 @@ mail: itsupport@%s
 objectclass: inetOrgPerson
 objectclass: posixAccount
 objectclass: PostfixBookMailAccount
-objectclass: top
 sn: Support
 uid: itsupport
 uidnumber: 1000
@@ -186,35 +193,32 @@ userpassword: {CRYPT}%s
 
 dn: ou=Groups,%s
 objectclass: organizationalUnit
-objectclass: top
 ou: Groups
 
-dn: ou=Access Control,ou=Groups,%s
+dn: ou=Security,ou=Groups,%s
 objectclass: organizationalUnit
-objectclass: top
-ou: Access Control
+ou: Security
 
-dn: cn=Domain User,ou=Access Control,ou=Groups,%s
-cn: Domain User
+dn: cn=Administrators,ou=Security,ou=Groups,%s
+cn: Administrators
 gidnumber: 500
-objectclass: posixGroup
-objectclass: top
+objectclass: groupOfNames
+objectclass: extensibleObject
 
-dn: cn=Domain Admin,ou=Access Control,ou=Groups,%s
-cn: Domain Admin
+dn: cn=Users,ou=Security,ou=Groups,%s
+cn: Users
 gidnumber: 501
-objectclass: posixGroup
-objectclass: top
+objectclass: groupOfNames
+objectclass: extensibleObject
 
-dn: cn=Service Account,ou=Access Control,ou=Groups,%s
-cn: Service Account
+dn: cn=Services,ou=Security,ou=Groups,%s
+cn: Services
 gidnumber: 502
-objectclass: posixGroup
-objectclass: top
+objectclass: groupOfNames
+objectclass: extensibleObject
 
 dn: ou=Mail,ou=Groups,%s
 objectclass: organizationalUnit
-objectclass: top
 ou: Mail
 
 """ % (

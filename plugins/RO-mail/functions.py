@@ -4,25 +4,10 @@ def dockerFile():
     image: docker.io/mailserver/docker-mailserver:latest
     container_name: mailserver
     ports:
-      - target:    25
-        published: 25
-        protocol:  tcp
-        mode:      host
-
-      - target:    143
-        published: 143
-        protocol:  tcp
-        mode:      host
-
-      - target:    587
-        published: 587
-        protocol:  tcp
-        mode:      host
-
-      - target:    993
-        published: 993
-        protocol:  tcp
-        mode:      host
+      - 25:25
+      - 143:143
+      - 587:587
+      - 993:993
     volumes:
       - ./storage/mailserver/mail/:/var/mail/
       - ./storage/mailserver/state/:/var/mail-state/
@@ -45,6 +30,16 @@ def dockerFile():
       - ROUNDCUBEMAIL_SMTP_SERVER=mailserver
     volumes:
       - ./init/webmail/config/:/var/roundcube/config/
+    restart: always
+  
+  sesrelay:
+    image: python:latest
+    ports:
+      - 33325:33325
+    volumes:
+      - ./init/sesrelay/script.py:/src/script.py
+    command: ["python3", "/src/script.py"]
+    restart: always
 """
 
 def envFile(base_dn, ldap_pass, domain):
@@ -113,6 +108,8 @@ smtpd_sasl_type = dovecot
 smtpd_sasl_auth_enable = yes
 smtpd_sasl_path = private/auth
 smtpd_relay_restrictions = permit_mynetworks, permit_sasl_authenticated, reject_unauth_destination
+
+mynetworks = 
 """
 
 def webmailOAuth(domain, client_id, client_secret):
@@ -142,3 +139,43 @@ introspection_mode = post
 
 tls_allow_invalid_cert=yes
 """ % (domain, client_id, client_secret, domain)
+
+def SESRelayScript():
+  return """
+from http.server import BaseHTTPRequestHandler, HTTPServer
+import json
+import smtplib
+import base64
+import email
+
+class Server(BaseHTTPRequestHandler):
+    def do_POST(self):
+        content_length = int(self.headers['Content-Length'])
+        post_data = json.loads(self.rfile.read(content_length))
+
+        raw = base64.b64decode(post_data['msg'])
+        msg = email.message_from_bytes(raw)
+        try:
+            smtpServer = smtplib.SMTP('mailserver',25,'SES-Relay')
+            smtpServer.send_message(msg)
+            self.send_response(200)
+            self.send_header('Content-type', 'text/html')
+            self.end_headers()
+            self.wfile.write("Recieved.")
+        except:
+            self.send_response(500)
+            self.end_headers()
+
+def run(server_class=HTTPServer, handler_class=Server, port=33325):
+    server_address = ('',port)
+    httpd = server_class(server_address, handler_class)
+    
+    try:
+        httpd.serve_forever()
+    except KeyboardInterrupt:
+        pass
+    httpd.server_close()
+
+if __name__ == '__main__':
+    run()
+  """

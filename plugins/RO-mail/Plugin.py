@@ -48,7 +48,8 @@ class Plugin(BasePlugin):
             'storage/mailserver/state',
             'storage/mailserver/logs',
             'init/mailserver/config',
-            'init/webmail/config'
+            'init/webmail/config',
+            'init/sesrelay'
         ]
         self.createFolders(paths, install_dir)
 
@@ -59,6 +60,9 @@ class Plugin(BasePlugin):
 
         contents = ROMailFunctions.dockerFile()
         self.appendContentsToFile(contents, docker_compose_file, install_dir)
+
+        contents = ROMailFunctions.SESRelayScript()
+        self.writeContentsToFile(contents, 'init/sesrelay/script.py', install_dir=install_dir)
 
 
     # Used to initialize any any configuration settings that need to be deployed
@@ -110,6 +114,7 @@ class Plugin(BasePlugin):
         # Use the Docker Plugin to Launch a specific Container
         self.events.emit("RO.launch", "mailserver")
         self.events.emit("RO.launch", "webmail")
+        self.events.emit("RO.launch", "sesrelay")
         pass
 
     # Preform any post launch for this container.

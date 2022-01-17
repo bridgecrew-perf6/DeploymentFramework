@@ -11,6 +11,10 @@ def dockerFile():
       - 4445:4445
       - 8088:8088
       - 8089:8089
+      - 5061:5051
+      - 5161:5161
+      - 5062:5062
+      - 5162:5162
     volumes:
       - ./storage/phoneserver/certs:/certs
       - ./storage/phoneserver/data:/data
