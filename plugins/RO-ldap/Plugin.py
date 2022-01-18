@@ -111,7 +111,7 @@ class Plugin(BasePlugin):
         self.writeContentsToFile(contents, 'init/ldap/ldifs/postfix.schema', install_dir)
 
         # permissions schema
-        contents = ROLdapFunctions.permissionsSchema()
+        contents = ROLdapFunctions.permissionsSchema(self.getSetting('base_dn'))
         self.writeContentsToFile(contents, 'init/ldap/ldifs/permissions.schema', install_dir)
 
         # Initial ldif population
@@ -161,14 +161,6 @@ class Plugin(BasePlugin):
         )
 
         self.waitToBeReady()
-        print("permissions.schema")
-        self.events.emit(
-            'RO.command', 
-            'ldap', 
-            'ldapadd -H ldapi:/// -D cn=config -w %s -f /assets/S7K-LDIF/permissions.schema' % self.getSetting('config_pass')
-        )
-
-        self.waitToBeReady()
         print("initial.load")
         self.events.emit(
             'RO.command', 
@@ -191,6 +183,15 @@ class Plugin(BasePlugin):
                 except:
                     print("ERROR LOADING LDIF %s" % x)
                     exit()
+
+        self.waitToBeReady()
+        print("permissions.schema")
+        self.events.emit(
+            'RO.command', 
+            'ldap', 
+            'ldapadd -H ldapi:/// -D cn=config -w %s -f /assets/S7K-LDIF/permissions.schema' % self.getSetting('config_pass')
+        )
+        
         Settings.create(plugin = self.module, key = 'post-launch', value='True')
 
     def createServiceAccount(self, user_name, user_password=None):

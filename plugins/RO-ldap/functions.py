@@ -76,7 +76,12 @@ cn: %s
 objectClass: simpleSecurityObject
 objectClass: organizationalRole
 userpassword: {CRYPT}%s
-""" % (username, base_dn, username, sha512_crypt(password))
+
+dn: cn=Services,ou=Security,ou=Groups,%s
+changetype: modify
+add: member
+member: cn=%s,ou=Service,ou=Accounts,%s
+""" % (username, base_dn, username, sha512_crypt(password), base_dn, username, base_dn)
 
 def postfixSchema():
   return """
@@ -153,10 +158,34 @@ olcObjectClasses: ( 1.3.6.1.4.1.29426.1.2.2.2 NAME 'PostfixBookMailForward'
 def permissionsSchema(base_dn):
     return """dn: olcDatabase={1}mdb,cn=config
 changeType: modify
+delete: olcAccess
+-
 add: olcAccess
-olcAccess: to attrs=userPassword,shadowLastChange by self =xw by dn="cn=admin,%s" write by anonymous auth by * none
-olcAccess: to * by self write by dn="cn=admin,%s" write by group.exact="cn=Administrators,ou=Security,ou=Groups,%s" write by * read
-"""
+olcAccess: to attrs=userPassword,shadowLastChange 
+  by self =xw 
+  by dn="cn=admin,%s" write
+  by group.exact="cn=Administrators,ou=Security,ou=Groups,%s" write
+  by anonymous auth 
+  by * none
+olcAccess: to * 
+  by self write 
+  by dn="cn=admin,%s" write
+  by group.exact="cn=Administrators,ou=Security,ou=Groups,%s" write
+  by group.exact="cn=Services,ou=Security,ou=Groups,%s" write
+  by * read
+olcAccess: to * 
+  by self read 
+  by dn="cn=admin,%s" write 
+  by group.exact="cn=Administrators,ou=Security,ou=Groups,%s" write
+  by group.exact="cn=Services,ou=Security,ou=Groups,%s" write
+  by * none
+
+
+dn: cn=config
+changetype: modify
+add: olcAuthzPolicy
+olcAuthzPolicy: to
+""" % (base_dn, base_dn, base_dn, base_dn, base_dn, base_dn, base_dn, base_dn)
 
 def initialLDIF(base_dn, domain_name, it_password):
     return """
@@ -177,7 +206,7 @@ ou: User
 
 dn: cn=IT Support,ou=User,ou=Accounts,%s
 cn: IT Support
-gidnumber: 501
+gidnumber: 500
 givenname: IT
 homedirectory: /home/users/itsupport
 loginshell: /bin/bash
@@ -193,10 +222,12 @@ userpassword: {CRYPT}%s
 
 dn: ou=Groups,%s
 objectclass: organizationalUnit
+objectclass: top
 ou: Groups
 
 dn: ou=Security,ou=Groups,%s
 objectclass: organizationalUnit
+objectclass: top
 ou: Security
 
 dn: cn=Administrators,ou=Security,ou=Groups,%s
@@ -204,23 +235,29 @@ cn: Administrators
 gidnumber: 500
 objectclass: groupOfNames
 objectclass: extensibleObject
+member: cn=IT Support,ou=User,ou=Accounts,%s
+authzTo: ldap:///%s??sub?(objectclass=*)
 
 dn: cn=Users,ou=Security,ou=Groups,%s
 cn: Users
 gidnumber: 501
 objectclass: groupOfNames
 objectclass: extensibleObject
+member: cn=IT Support,ou=User,ou=Accounts,%s
 
 dn: cn=Services,ou=Security,ou=Groups,%s
 cn: Services
 gidnumber: 502
 objectclass: groupOfNames
 objectclass: extensibleObject
+saslAuthzTo: ldap:///%s??sub?(objectclass=*)
+member: 
 
 dn: ou=Mail,ou=Groups,%s
 objectclass: organizationalUnit
+objectclass: top
 ou: Mail
 
 """ % (
-   base_dn, base_dn, base_dn, base_dn, domain_name, sha512_crypt(it_password), base_dn, base_dn, base_dn, base_dn, base_dn, base_dn
+   base_dn, base_dn, base_dn, base_dn, domain_name, sha512_crypt(it_password), base_dn, base_dn, base_dn, base_dn, base_dn, base_dn, base_dn, base_dn, base_dn, base_dn
 )

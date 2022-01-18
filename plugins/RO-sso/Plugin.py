@@ -266,10 +266,45 @@ class Plugin(BasePlugin):
             exit()
         else:
             provider_id = r.json()['pk']
+            self.addProxyProviderToOutpost(provider_id)
             r = requests.get('https://sso.%s/api/v3/providers/proxy/%s' % (domain, provider_id), headers={'Authorization': "Bearer %s" % self.getSetting('admin_token')}, verify=False)
             r = requests.put('https://sso.%s/api/v3/providers/proxy/%s' % (domain, provider_id), json=r.json(), headers={'Authorization': "Bearer %s" % self.getSetting('admin_token')}, verify=False)
             return provider_id
+    
+    def addProxyProviderToOutpost(self, provider_id):
+        RemoteOfficeModule = Module.select().where(Module.name == 'RemoteOffice').get()
+        domain = Settings.select().where(Settings.plugin == RemoteOfficeModule, Settings.key == 'domain_name').get().value
 
+        outposts = requests.get('https://sso.%s/api/v3/outposts/instances/' % domain, headers={'Authorization': "Bearer %s" % self.getSetting('admin_token')}, verify=False)
+        if outposts.status_code != 200:
+            print("Unable To Get Proxy Outposts")
+            exit()
+        outpost = outposts.json()['results'][0];
+
+        providers = [provider_id]
+        if outpost['providers'] is not None:
+            for p in outpost['providers']:
+                providers.append(p)
+
+        data = {
+            'name': outpost['name'],
+            'type': outpost['type'],
+            'service_connection': outpost['service_connection'],
+            'providers': providers,
+            'config': outpost['config'],
+            'managed': outpost['managed']
+        }
+        
+        response = requests.put('https://sso.%s/api/v3/outposts/instances/%s/' % (domain, outpost['pk']), json=data, headers={'Authorization': "Bearer %s" % self.getSetting('admin_token')}, verify=False)
+        if response.status_code != 200:
+            print("Unable To add Proxy to Outposts")
+            print('https://sso.%s/api/v3/outposts/instances/%s/' % (domain, outpost['pk']))
+            print(data)
+            print(response.status_code)
+            print(response.text)
+            exit()
+
+        pass
     def createOauthApplication(self, name, slug, launch_url, launch_description, client_id, client_secret, redirection_uri = None, launch_provider = None):
         RemoteOfficeModule = Module.select().where(Module.name == 'RemoteOffice').get()
         domain = Settings.select().where(Settings.plugin == RemoteOfficeModule, Settings.key == 'domain_name').get().value

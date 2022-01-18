@@ -95,7 +95,7 @@ def UserTemplate(domain):
   <rdn>cn</rdn>
   <visible>1</visible>
   <icon>ldap-user.png</icon>
-  <regexp>^ou=User,ou=Accounts.*,</regexp>
+  <regexp>^.*ou=User,ou=Accounts.*,</regexp>
 
   <objectClasses>
     <objectClass id="posixAccount"></objectClass>
@@ -106,21 +106,21 @@ def UserTemplate(domain):
   <attributes>
     <attribute id="givenName">
       <display>First Name</display>
-      <onchange>=autoFill(cn;%%givenName%% %%sn%)</onchange>
-      <onchange>=autoFill(uid;%%givenName|0-1/l%%%%sn/l%)</onchange>
+      <onchange>=autoFill(cn;%%givenName%% %%sn%%)</onchange>
+      <onchange>=autoFill(uid;%%givenName|0-1/l%%%%sn/l%%)</onchange>
     </attribute>
     <attribute id="sn">
       <display>Last Name</display>
-      <onchange>=autoFill(cn;%%givenName%% %%sn%)</onchange>
-      <onchange>=autoFill(uid;%%givenName|0-1/l%%%%sn/l%)</onchange>
+      <onchange>=autoFill(cn;%%givenName%% %%sn%%)</onchange>
+      <onchange>=autoFill(uid;%%givenName|0-1/l%%%%sn/l%%)</onchange>
     </attribute>
     <attribute id="cn">
       <display>Common Name</display>
     </attribute>
     <attribute id="uid">
       <display>Username</display>
-      <onchange>=autoFill(mail;%%uid%@%s)</onchange>
-      <onchange>=autoFill(homeDirectory;/home/%%uid%/)</onchange>
+      <onchange>=autoFill(mail;%%uid%%@%s)</onchange>
+      <onchange>=autoFill(homeDirectory;/home/%%uid%%/)</onchange>
     </attribute>
     <attribute id="mail">
       <display>Primay Email Address</display>
@@ -135,7 +135,7 @@ def UserTemplate(domain):
     </attribute>
     <attribute id="gidNumber">
       <display>Primary Group</display>
-      <value><![CDATA[=php.PickList(/;(&(objectClass=groupOfNames));gidNumber;%%cn%;;;;cn)]]></value>
+      <value><![CDATA[=php.PickList(/;(&(objectClass=groupOfNames));gidNumber;%%cn%%;;;;cn)]]></value>
     </attribute>
     <attribute id="telephoneNumber">
       <display>Telephone Extension</display>
@@ -151,7 +151,7 @@ def GroupTemplate():
   <description>New Security Group</description>
   <icon>ldap-ou.png</icon>
   <rdn>cn</rdn>
-  <regexp>^ou=Security,ou=Groups.*,</regexp>
+  <regexp>^.*ou=Security,ou=Groups.*,</regexp>
   <title>Security Group</title>
   <visible>1</visible>
 

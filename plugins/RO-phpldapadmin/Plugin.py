@@ -1,6 +1,7 @@
 from core.models.Module import Module
 from plugins.RemoteOffice.Template import Template as BasePlugin
 from core.models.Settings import Settings
+import time
 
 from . import functions as ROPhpLDAPAdminFunctions
 
@@ -19,21 +20,22 @@ class Plugin(BasePlugin):
 
     # Prompts User for Configuration Options
     def preformOfficePrompts(self):
-        questions = [
-            # REF: https://github.com/CITGuru/PyInquirer/
-            {
-                'type': 'password',
-                'name': 'ldap_password',
-                'message': '[%s] New LDAPADMIN-BIND user password:' % str.upper(self.getName())
-            },
-        ]
+        # questions = [
+        #     # REF: https://github.com/CITGuru/PyInquirer/
+        #     {
+        #         'type': 'password',
+        #         'name': 'ldap_password',
+        #         'message': '[%s] New LDAPADMIN-BIND user password:' % str.upper(self.getName())
+        #     },
+        # ]
         
-        questionsToAsk = []
-        for question in questions:
-            if self.promptRequired(question['name']):
-                questionsToAsk.append(question)
+        # questionsToAsk = []
+        # for question in questions:
+        #     if self.promptRequired(question['name']):
+        #         questionsToAsk.append(question)
 
-        self.preformPrompts(questionsToAsk)
+        # self.preformPrompts(questionsToAsk)
+        pass
 
     # Used to create any storage and initizalation directories needed
     def createFolderStructure(self, install_dir = './office'):
@@ -58,8 +60,9 @@ class Plugin(BasePlugin):
         ROldapModule = Module.select().where(Module.name == 'RO-ldap').get()
         base_dn = Settings.select().where(Settings.plugin == ROldapModule, Settings.key == 'base_dn').get().value
 
-        bind_dn = "cn=%s,ou=Service,ou=Accounts,%s" % ("LDAPADMIN-BIND", base_dn)
-        contents = ROPhpLDAPAdminFunctions.configFile(bind_dn, self.getSetting('ldap_password'))
+        # bind_id = "cn=%s,ou=Service,ou=Accounts,%s" % ("LDAPADMIN-BIND", base_dn)
+        bind_pass = Settings.select().where(Settings.plugin == ROldapModule, Settings.key == 'admin_pass').get().value
+        contents = ROPhpLDAPAdminFunctions.configFile('cn=admin,%s'% base_dn, bind_pass)
         self.writeContentsToFile(contents, 'init/ldap-admin/config.php', install_dir)
 
         RemoteOfficeModule = Module.select().where(Module.name == 'RemoteOffice').get()
@@ -69,6 +72,10 @@ class Plugin(BasePlugin):
 
         contents = ROPhpLDAPAdminFunctions.GroupTemplate()
         self.writeContentsToFile(contents, 'init/ldap-admin/templates/custom_Group.xml', install_dir)
+
+        # if self.promptRequired('ldap-created'):
+        #     self.events.emit('RO.ldap.createServiceAccount', 'LDAPADMIN-BIND', self.getSetting('ldap_password'))
+        #     Settings.create(plugin = self.module, key = 'ldap-created', value='True')
         
         
 
@@ -81,9 +88,7 @@ class Plugin(BasePlugin):
         if not self.promptRequired('pre-launch'):
             return
 
-        if self.promptRequired('ldap-created'):
-            self.events.emit('RO.ldap.createServiceAccount', 'LDAPADMIN-BIND', self.getSetting('ldap_password'))
-            Settings.create(plugin = self.module, key = 'ldap-created', value='True')
+        
         
 
         advanceProxyConfig = ROPhpLDAPAdminFunctions.getAdvanceConfig()
@@ -93,6 +98,8 @@ class Plugin(BasePlugin):
 
     # Preform the actual launching of docker container for this plugin
     def launchDockerService(self):
+        self.events.emit("RO.launch", "phpldapadmin")
+        time.sleep(5)
         self.events.emit("RO.launch", "phpldapadmin")
         pass
 
