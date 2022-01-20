@@ -74,8 +74,8 @@ RO-sso:
 RO-mail:
   enabled: true
   ldap_password: SecurePassword
-  # client_id: SomeVeryLongAndSecureString
-  # client_secret:SomeVeryVeryLongAndSecureString
+ # client_id: SomeVeryLongAndSecureString
+ # client_secret: SomeVeryVeryLongAndSecureString
 
 RO-cloud:
   enabled: true
@@ -112,13 +112,16 @@ RO-wordpress:
   admin_user: admin
   admin_email: itsupport@sniper7kills.com
   admin_password: SecurePassword
-  # client_id: SomeVeryLongAndSecureString
-  # client_secret:SomeVeryVeryLongAndSecureString
+ # client_id: SomeVeryLongAndSecureString
+ # client_secret: SomeVeryVeryLongAndSecureString
 
 RO-guacamole:
   enabled: true
   database_name: guacamole
   database_user: guacamole
   database_password: SecurePassword
-  # client_id: SomeVeryLongAndSecureString
-  # client_secret:SomeVeryVeryLongAndSecureString
+ # client_id: SomeVeryLongAndSecureString
+ # client_secret: SomeVeryVeryLongAndSecureString
+
+RO-vpn:
+  enabled: true

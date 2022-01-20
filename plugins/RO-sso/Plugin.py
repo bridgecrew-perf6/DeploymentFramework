@@ -10,13 +10,15 @@ class Plugin(BasePlugin):
     listenForEvents = {
         'RO.sso.createOauthApplication': 'createOauthApplication',
         'RO.sso.createSAMLApplication': 'createSAMLApplication',
-        'RO.sso.createProxyApplication': 'createProxyApplication'
+        'RO.sso.createProxyApplication': 'createProxyApplication',
+        'RO.sso.createSAMLPropertyMapping': 'createSAMLPropertyMapping'
     }
 
     availableCommands = {
         'RO.sso.createOauthApplication': 'Create a new OAuth based Application',
         'RO.sso.createSAMLApplication': 'Create a new SAML based Application',
-        'RO.sso.createProxyApplication': 'Create a new Proxy Based Application'
+        'RO.sso.createProxyApplication': 'Create a new Proxy Based Application',
+        'RO.sso.createSAMLPropertyMapping': 'Create a New SAML Property Mapping'
     }
 
     # Requires Redis + PostGresql + LDAP + Proxy
@@ -150,6 +152,9 @@ class Plugin(BasePlugin):
 
         ROSSOFunctions.configureLDAPSource(domain, self.getSetting('admin_token'), base_dn, self.getSetting('ldap_password'))
 
+        ROSSOFunctions.makeGroupAdmins(domain, self.getSetting('admin_token'), 'Administrators')
+        ROSSOFunctions.makeGroupAdmins(domain, self.getSetting('admin_token'), 'SSO Admins')
+
         Settings.create(plugin = self.module, key = 'post-launch', value='True')
 
 
@@ -198,16 +203,40 @@ class Plugin(BasePlugin):
             r = requests.put('https://sso.%s/api/v3/providers/oauth2/%s' % (domain, provider_id), json=r.json(), headers={'Authorization': "Bearer %s" % self.getSetting('admin_token')}, verify=False)
             return provider_id
 
-    def getSAMLPropertyMappings(self):
+    def getSAMLPropertyMappings(self, app_name):
         RemoteOfficeModule = Module.select().where(Module.name == 'RemoteOffice').get()
         domain = Settings.select().where(Settings.plugin == RemoteOfficeModule, Settings.key == 'domain_name').get().value
         
         r = requests.get('https://sso.%s/api/v3/propertymappings/all/?search=SAML'% domain, headers={'Authorization': "Bearer %s" % self.getSetting('admin_token')}, verify=False)
         response = r.json()['results']
         keys = []
+        # Do not map these groups for these apps
+        MappingExceptions = {
+            'Cloud': ['authentik default SAML Mapping: Groups']
+        }
         for mapping in response:
-            keys.append(mapping['pk'])
+            if app_name in MappingExceptions.keys() and mapping['name'] not in MappingExceptions[app_name]:
+                keys.append(mapping['pk'])
+            elif app_name not in MappingExceptions.keys():
+                keys.append(mapping['pk'])
         return keys
+
+    def createSAMLPropertyMapping(self, name, expression, saml_name, friendly_name=None):
+        data = {
+            "name": name,
+            "expression": expression,
+            "saml_name": saml_name,
+        }
+        if friendly_name is not None:
+            data["friendly_name"] = friendly_name
+
+        RemoteOfficeModule = Module.select().where(Module.name == 'RemoteOffice').get()
+        domain = Settings.select().where(Settings.plugin == RemoteOfficeModule, Settings.key == 'domain_name').get().value
+
+        r = requests.post('https://sso.%s/api/v3/propertymappings/saml/' % domain, json=data, headers={'Authorization': "Bearer %s" % self.getSetting('admin_token')}, verify=False)
+        if r.status_code != 201:
+            print(r.json())
+            exit()
 
     def createSAMLProvider(self, name, acs_url, audience, sp_binding):
         RemoteOfficeModule = Module.select().where(Module.name == 'RemoteOffice').get()
@@ -216,7 +245,7 @@ class Plugin(BasePlugin):
         data = {
             'name': '%s SAML Provider' % name,
             'authorization_flow': self.getDefaultFlowID(),
-            'property_mappings': self.getSAMLPropertyMappings(),
+            'property_mappings': self.getSAMLPropertyMappings(name),
             'acs_url': acs_url,
             'issuer': 'https://sso.%s' % domain,
             'sp_binding': sp_binding,
@@ -330,7 +359,7 @@ class Plugin(BasePlugin):
         data = {
             'name': name,
             'slug': slug,
-            'provider': self.createSAMLProvider("%s SAML Provider" % name, acs_url, audience, sp_binding),
+            'provider': self.createSAMLProvider(name, acs_url, audience, sp_binding),
             "meta_launch_url": launch_url,
             "meta_description": launch_description,
             "policy_engine_mode": "all"

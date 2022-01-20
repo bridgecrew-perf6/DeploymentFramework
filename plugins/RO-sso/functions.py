@@ -117,7 +117,7 @@ def configureLDAPSource(domain, token, base_dn, bind_pass):
         # "additional_user_dn": "string",
         # "additional_group_dn": "string",
         "user_object_filter": "(objectClass=inetOrgPerson)",
-        "group_object_filter": "(objectClass=posixGroup)",
+        "group_object_filter": "(objectClass=groupOfNames)",
         "group_membership_field": "member",
         "object_uniqueness_field": "cn",
         "sync_users": True,
@@ -137,8 +137,30 @@ def configureLDAPSource(domain, token, base_dn, bind_pass):
             else:
                 print("syncing...")
                 r = requests.patch('https://sso.%s/api/v3/sources/ldap/ldap-source'% domain, headers={'Authorization': "Bearer %s" % token}, verify=False)
-                r.status_code
+                r = requests.patch('https://sso.%s/api/v3/sources/ldap/ldap-source'% domain, headers={'Authorization': "Bearer %s" % token}, verify=False)
+                r = requests.patch('https://sso.%s/api/v3/sources/ldap/ldap-source'% domain, headers={'Authorization': "Bearer %s" % token}, verify=False)
                 break
         except Exception as e:
             #print("Exception")
             time.sleep(10)
+
+def makeGroupAdmins(domain, token, groupName):
+  import requests
+  data = {
+    "name": groupName
+  }
+  r = requests.get('https://sso.%s/api/v3/core/groups'% domain, params=data, headers={'Authorization': "Bearer %s" % token}, verify=False)
+  if r.status_code != 200:
+    print("Unable To Search For Group")
+    exit()
+  
+  for group in r.json()['results']:
+    data = {
+      'is_superuser': True
+    }
+    r = requests.patch('https://sso.%s/api/v3/core/groups/%s/'% (domain, group['pk']), json=data, headers={'Authorization': "Bearer %s" % token}, verify=False)
+    if r.status_code != 200:
+      print("Unable Make Group an Admin")
+      print(r.status_code)
+      print(r.text)
+      exit()

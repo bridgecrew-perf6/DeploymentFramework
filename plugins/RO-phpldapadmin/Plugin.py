@@ -99,8 +99,6 @@ class Plugin(BasePlugin):
     # Preform the actual launching of docker container for this plugin
     def launchDockerService(self):
         self.events.emit("RO.launch", "phpldapadmin")
-        time.sleep(5)
-        self.events.emit("RO.launch", "phpldapadmin")
         pass
 
     # Preform any post launch for this container.
@@ -113,5 +111,5 @@ class Plugin(BasePlugin):
         RemoteOfficeModule = Module.select().where(Module.name == 'RemoteOffice').get()
         domain = Settings.select().where(Settings.plugin == RemoteOfficeModule, Settings.key == 'domain_name').get().value
 
-        self.events.emit('RO.sso.createProxyApplication', 'LDAP Admin', 'ldapadmin', 'https://ldapadmin.%s' % domain, 'Manage Accounts')
+        self.events.emit('RO.sso.createProxyApplication', 'LDAP Admin', 'ldapadmin', 'https://ldapadmin.%s/' % domain, 'Manage Accounts')
         Settings.create(plugin = self.module, key = 'post-launch', value='True')

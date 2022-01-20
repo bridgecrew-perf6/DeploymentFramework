@@ -253,11 +253,32 @@ objectclass: extensibleObject
 saslAuthzTo: ldap:///%s??sub?(objectclass=*)
 member: 
 
+dn: cn=SSO Admins,ou=Security,ou=Groups,%s
+cn: SSO Admins
+gidnumber: 503
+objectclass: groupOfNames
+objectclass: extensibleObject
+member: cn=IT Support,ou=User,ou=Accounts,%s
+
+dn: cn=Cloud Admins,ou=Security,ou=Groups,%s
+cn: Cloud Admins
+gidnumber: 504
+objectclass: groupOfNames
+objectclass: extensibleObject
+member: cn=IT Support,ou=User,ou=Accounts,%s
+
+dn: cn=VPN Users,ou=Security,ou=Groups,%s
+cn: VPN Users
+gidnumber: 504
+objectclass: groupOfNames
+objectclass: extensibleObject
+member: cn=IT Support,ou=User,ou=Accounts,%s
+
 dn: ou=Mail,ou=Groups,%s
 objectclass: organizationalUnit
 objectclass: top
 ou: Mail
 
 """ % (
-   base_dn, base_dn, base_dn, base_dn, domain_name, sha512_crypt(it_password), base_dn, base_dn, base_dn, base_dn, base_dn, base_dn, base_dn, base_dn, base_dn, base_dn
+   base_dn, base_dn, base_dn, base_dn, domain_name, sha512_crypt(it_password), base_dn, base_dn, base_dn, base_dn, base_dn, base_dn, base_dn, base_dn, base_dn, base_dn, base_dn, base_dn, base_dn, base_dn, base_dn, base_dn
 )

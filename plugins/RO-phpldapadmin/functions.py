@@ -1,10 +1,11 @@
 def dockerFile():
     return """
   phpldapadmin:
+    restart: unless-stopped
     image: osixia/phpldapadmin:latest
     volumes:
       - ./storage/ldap-admin:/var/www/phpldapadmin
-      - ./init/ldap-admin/config.php:/container/service/phpldapadmin/assets/config/config.php
+      - ./init/ldap-admin/config.php:/var/www/phpldapadmin_bootstrap/config/config.php
       - ./init/ldap-admin/templates:/var/www/phpldapadmin_bootstrap/templates/creation
       - ./init/ldap-admin/templates:/var/www/phpldapadmin_bootstrap/templates/modification
     environment:

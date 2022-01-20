@@ -3,7 +3,7 @@ from plugins.RemoteOffice.Template import Template as BasePlugin
 from core.models.Settings import Settings
 import requests, time, json
 
-from . import functions as ROWordpressFunctions
+from . import functions as ROGuacamoleFunctions
 
 class Plugin(BasePlugin):
 
@@ -77,7 +77,7 @@ class Plugin(BasePlugin):
 
     # Used to append the plugin's docker service if it exists.
     def appendDockerService(self, docker_compose_file = 'docker-compose.yml', install_dir = './office'):
-        contents = ROWordpressFunctions.dockerFile()
+        contents = ROGuacamoleFunctions.dockerFile()
         self.appendContentsToFile(contents, docker_compose_file, install_dir)
 
 
@@ -87,7 +87,7 @@ class Plugin(BasePlugin):
         domain = Settings.select().where(Settings.plugin == RemoteOfficeModule, Settings.key == 'domain_name').get().value
 
         # ENV File
-        contents = ROWordpressFunctions.envFile(self.getSetting('database_name'), self.getSetting('database_user'), self.getSetting('database_password'), domain, self.getSetting('client_id'))
+        contents = ROGuacamoleFunctions.envFile(self.getSetting('database_name'), self.getSetting('database_user'), self.getSetting('database_password'), domain, self.getSetting('client_id'))
         self.writeContentsToFile(contents, 'envs/guacamole.env', install_dir)
         
         if self.promptRequired('db-created'):
@@ -109,7 +109,7 @@ class Plugin(BasePlugin):
         RemoteOfficeModule = Module.select().where(Module.name == 'RemoteOffice').get()
         domain = Settings.select().where(Settings.plugin == RemoteOfficeModule, Settings.key == 'domain_name').get().value
 
-        self.events.emit('RO.sso.createOauthApplication', 'Guacamole', 'guacamole', 'https://desktop.%s/guacamole' % domain, 'Remote Desktops', self.getSetting('client_id'), self.getSetting('client_secret'), 'https://desktop.%s/guacamole' % domain)
+        self.events.emit('RO.sso.createOauthApplication', 'Guacamole', 'guacamole', 'https://desktop.%s/guacamole/' % domain, 'Remote Desktops', self.getSetting('client_id'), self.getSetting('client_secret'), 'https://desktop.%s/guacamole/' % domain)
 
         Settings.create(plugin = self.module, key = 'pre-launch', value='True')
 

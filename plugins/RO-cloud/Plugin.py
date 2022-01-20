@@ -174,6 +174,19 @@ class Plugin(BasePlugin):
 
         # SAML
         self.enableApp('user_saml')
+
+        self.events.emit("RO.sso.createSAMLPropertyMapping",
+            'Nextcloud SAML Group Mapping',
+            """for group in user.ak_groups.all():
+    yield group.name
+if ak_is_group_member(request.user, name="Administrators"):
+    yield "admin"
+if ak_is_group_member(request.user, name="Cloud Admins"):
+    yield "admin"
+""",
+            'http://schemas.xmlsoap.org/claims/Group'
+        )
+
         self.events.emit("RO.sso.createSAMLApplication", 
                 "Cloud",
                 "cloud",
