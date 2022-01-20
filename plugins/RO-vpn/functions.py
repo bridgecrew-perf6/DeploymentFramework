@@ -80,7 +80,7 @@ def ldapFile(base_dn):
 	#PFTable	ips_vpn_users
 
 	# Uncomment and set to true to support OpenVPN Challenge/Response
-	PasswordIsCR	true
+	PasswordIsCR	false
 	<Group>
 		# Match full user DN if true, uid only if false
 		RFC2307bis	false
