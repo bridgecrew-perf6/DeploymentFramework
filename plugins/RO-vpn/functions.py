@@ -157,7 +157,7 @@ fi
 
 iptables -t nat -A POSTROUTING -s 172.25.0.0/24 -o eth0 -j MASQUERADE
 
-python3 /opt/vpnServer.py &
+python3 /opt/vpnServer.py
 
 openvpn --config /etc/openvpn/server.conf --client-cert-not-required
 """
@@ -193,14 +193,21 @@ class S(BaseHTTPRequestHandler):
     def do_GET(self):
         if '/rest/GetUserlogin?' in self.path:
             # Validate Autheorization
-            print(self.headers['Authorization'])
-            auth = base64.decodebytes(self.headers['Authorization'][6:].encode()).decode()
-            username,password = auth.split(':',1)
-            if not _ldap_login(username, password):
-                self.send_response(401)
+            try:
+                print(self.headers['Authorization'])
+                auth = base64.decodebytes(self.headers['Authorization'][6:].encode()).decode()
+                username,password = auth.split(':',1)
+                if not _ldap_login(username, password):
+                    self.send_response(401)
+                    self.send_header('Content-type', 'text/html')
+                    self.end_headers()
+                    self.wfile.write("Login Failed".encode())
+                    return
+            except:
+                self.send_response(200)
                 self.send_header('Content-type', 'text/html')
                 self.end_headers()
-                self.wfile.write("Login Failed".encode())
+                self.wfile.write("No Content".encode())
                 return
             
             self._set_response()
@@ -210,7 +217,7 @@ class S(BaseHTTPRequestHandler):
 dev tun
 proto udp
 auth-user-pass
-remote %%s 1194  # Server settings
+remote %s 1194  # Server settings
 remote-cert-tls server
 resolv-retry infinite
 auth-nocache
@@ -219,8 +226,14 @@ persist-tun
 topology subnet
 script-security 3 system
 <ca>
-%%s
+%s
 </ca>\"\"\" % (self.headers['host'], cafile)).encode())
+        else:
+            self.send_response(200)
+            self.send_header('Content-type', 'text/html')
+            self.end_headers()
+            self.wfile.write("No Content".encode())
+            return
 
     def do_POST(self):
         content_length = int(self.headers['Content-Length']) # <--- Gets the size of data
