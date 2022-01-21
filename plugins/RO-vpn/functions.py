@@ -17,11 +17,13 @@ def dockerBuildFile():
 
 RUN apt-get update && \
     apt-get upgrade -y && \
-    apt-get install openvpn openvpn-auth-ldap openssl iptables -y && \
+    apt-get install openvpn openvpn-auth-ldap openssl iptables python3 python3-pip -y && \
+	pip3 install ldap3 && \
     mkdir /etc/openvpn/auth && \
     mkdir /etc/openvpn/certs
 
 COPY startup.sh /opt/startup.sh
+COPY http.py /opt/http.py
 
 VOLUME /etc/openvpn
 EXPOSE 1194/udp
@@ -154,5 +156,97 @@ fi
 
 iptables -t nat -A POSTROUTING -s 172.25.0.0/24 -o eth0 -j MASQUERADE
 
+python3 /opt/http.py &
+
 openvpn --config /etc/openvpn/server.conf --client-cert-not-required
+"""
+
+def httpScript():
+	return """
+from http.server import BaseHTTPRequestHandler, HTTPServer
+import logging
+import base64
+import ldap3
+from ldap3.core.exceptions import LDAPException
+
+
+def _ldap_login(username, password):
+    try:
+        with ldap3.Connection('ldap', user=username, password=password) as conn:
+            print(conn.result["description"]) # "success" if bind is ok
+            return True
+    except LDAPException:
+        print('Unable to connect to LDAP server')
+        return True
+
+class S(BaseHTTPRequestHandler):
+    def _set_response(self):
+        self.send_response(200)
+        self.send_header('Content-type', 'text/html')
+        self.end_headers()
+
+    def do_HEAD(self):
+        logging.info("Head Request!")
+        print("".encode())
+
+    def do_GET(self):
+        if '/rest/GetUserlogin?' in self.path:
+            # Validate Autheorization
+            print(self.headers['Authorization'])
+            auth = base64.decodebytes(self.headers['Authorization'][6:].encode()).decode()
+            username,password = auth.split(':',1)
+            if not _ldap_login(username, password):
+                self.send_response(401)
+                self.send_header('Content-type', 'text/html')
+                self.end_headers()
+                self.wfile.write("Login Failed".encode())
+                return
+            
+            self._set_response()
+            with open('/etc/openvpn/certs/ca.crt') as f:
+                cafile = f.read()
+            self.wfile.write(("client
+dev tun
+proto udp
+auth-user-pass
+remote %s 1194  # Server settings
+remote-cert-tls server
+resolv-retry infinite
+auth-nocache
+persist-key
+persist-tun
+topology subnet
+script-security 3 system
+<ca>
+%s
+</ca>" % (self.headers['host'], cafile)).encode())
+
+    def do_POST(self):
+        content_length = int(self.headers['Content-Length']) # <--- Gets the size of data
+        post_data = self.rfile.read(content_length) # <--- Gets the data itself
+
+        self._set_response()
+        self.wfile.write("POST request for {}".format(self.path).encode('utf-8'))
+
+def run(server_class=HTTPServer, handler_class=S, port=80):
+    logging.basicConfig(level=logging.INFO)
+    server_address = ('', port)
+    httpd = server_class(server_address, handler_class)
+
+
+    logging.info('Starting httpd...\n')
+    try:
+        httpd.serve_forever()
+    except KeyboardInterrupt:
+        pass
+    httpd.server_close()
+    logging.info('Stopping httpd...\n')
+
+if __name__ == '__main__':
+    from sys import argv
+
+    if len(argv) == 2:
+        run(port=int(argv[1]))
+    else:
+        run()
 """

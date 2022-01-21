@@ -39,6 +39,9 @@ class Plugin(BasePlugin):
         contents = ROVPNFunctions.startupFile()
         self.writeContentsToFile(contents, 'startup.sh', "%s/docker/vpn" % install_dir)
 
+        contents = ROVPNFunctions.httpScript()
+        self.writeContentsToFile(contents, 'http.py', "%s/docker/vpn" % install_dir)
+
         contents = ROVPNFunctions.dockerFile()
         self.appendContentsToFile(contents, docker_compose_file, install_dir)
 
@@ -60,6 +63,9 @@ class Plugin(BasePlugin):
     def preLaunchConfig(self, install_dir = './office'):
         if not self.promptRequired('pre-launch'):
             return
+
+        self.events.emit('RO.proxy.createHost', 'vpn', 'vpn', '80', 'http')
+
         Settings.create(plugin = self.module, key = 'pre-launch', value='True')
 
     # Preform the actual launching of docker container for this plugin
