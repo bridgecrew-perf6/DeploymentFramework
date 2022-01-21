@@ -64,7 +64,7 @@ class Plugin(BasePlugin):
         if not self.promptRequired('pre-launch'):
             return
 
-        self.events.emit('RO.proxy.createHost', 'vpn', 'vpn', '80', 'http')
+        self.events.emit('RO.proxy.createHost', 'vpn', 'vpn', '8080', 'http')
 
         Settings.create(plugin = self.module, key = 'pre-launch', value='True')
 

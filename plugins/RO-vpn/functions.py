@@ -27,6 +27,7 @@ COPY http.py /opt/vpnServer.py
 
 VOLUME /etc/openvpn
 EXPOSE 1194/udp
+EXPOSE 8080
 
 CMD /bin/bash /opt/startup.sh
 """
@@ -228,7 +229,7 @@ script-security 3 system
         self._set_response()
         self.wfile.write("POST request for {}".format(self.path).encode('utf-8'))
 
-def run(server_class=HTTPServer, handler_class=S, port=80):
+def run(server_class=HTTPServer, handler_class=S, port=8080):
     logging.basicConfig(level=logging.INFO)
     server_address = ('', port)
     httpd = server_class(server_address, handler_class)
@@ -243,10 +244,6 @@ def run(server_class=HTTPServer, handler_class=S, port=80):
     logging.info('Stopping httpd...\\n')
 
 if __name__ == '__main__':
-    from sys import argv
 
-    if len(argv) == 2:
-        run(port=int(argv[1]))
-    else:
-        run()
+    run(8080)
 """
