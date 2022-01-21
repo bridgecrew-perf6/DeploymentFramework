@@ -83,6 +83,16 @@ add: member
 member: cn=%s,ou=Service,ou=Accounts,%s
 """ % (username, base_dn, username, sha512_crypt(password), base_dn, username, base_dn)
 
+def guacamoleSchema():
+      return """dn: cn=guacConfigGroup,cn=schema,cn=config
+objectClass: olcSchemaConfig
+cn: guacConfigGroup
+olcAttributeTypes: {0}( 1.3.6.1.4.1.38971.1.1.1 NAME 'guacConfigProtocol' SYNTAX 1.3.6.1.4.1.1466
+ .115.121.1.15 )
+olcAttributeTypes: {1}( 1.3.6.1.4.1.38971.1.1.2 NAME 'guacConfigParameter' SYNTAX 1.3.6.1.4.1.146
+ 6.115.121.1.15 )
+olcObjectClasses: {0}( 1.3.6.1.4.1.38971.1.2.1 NAME 'guacConfigGroup' DESC 'Guacamole configuration group' SUP groupOfNames MUST guacConfigProtocol MAY guacConfigParameter )"""
+
 def postfixSchema():
   return """
 dn: cn=postfix,cn=schema,cn=config

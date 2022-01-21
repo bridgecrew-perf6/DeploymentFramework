@@ -114,6 +114,10 @@ class Plugin(BasePlugin):
         contents = ROLdapFunctions.permissionsSchema(self.getSetting('base_dn'))
         self.writeContentsToFile(contents, 'init/ldap/ldifs/permissions.schema', install_dir)
 
+        #Guacamole Schema
+        contents = ROLdapFunctions.guacamoleSchema()
+        self.writeContentsToFile(contents, 'init/ldap/ldifs/guacamole.schema', install_dir)
+
         # Initial ldif population
         contents = ROLdapFunctions.initialLDIF(self.getSetting('base_dn'), domain, self.getSetting('it_password'))
         self.writeContentsToFile(contents, 'init/ldap/ldifs/initial.load', install_dir)
@@ -190,6 +194,12 @@ class Plugin(BasePlugin):
             'RO.command', 
             'ldap', 
             'ldapadd -H ldapi:/// -D cn=config -w %s -f /assets/S7K-LDIF/permissions.schema' % self.getSetting('config_pass')
+        )
+        print("guacamole.schema")
+        self.events.emit(
+            'RO.command', 
+            'ldap', 
+            'ldapadd -H ldapi:/// -D cn=config -w %s -f /assets/S7K-LDIF/guacamole.schema' % self.getSetting('config_pass')
         )
         
         Settings.create(plugin = self.module, key = 'post-launch', value='True')

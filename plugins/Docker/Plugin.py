@@ -62,7 +62,7 @@ class Plugin(BasePlugin):
 
     def startDockerContainer(self, launch_location, container_name):
         #print("[TODO] Start Docker Container In %s Named %s" % (launch_location, container_name))
-        launchCommand = ["docker-compose","up","-d", container_name]
+        launchCommand = ["docker-compose","up","-d", "--build", container_name]
         try:
             result = subprocess.Popen(launchCommand, cwd=launch_location)
             text = result.communicate()[0]
