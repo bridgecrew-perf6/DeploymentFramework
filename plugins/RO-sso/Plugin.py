@@ -190,7 +190,7 @@ class Plugin(BasePlugin):
             'issuer_mode': 'per_provider',
             'sub_mode': 'user_email',
             'include_claims_in_id_token': True,
-            'token_validity': 'minutes=300'
+            'token_validity': 'minutes=299'
         }
         if redirect_uri is not None:
                 data['redirect_uris'] = redirect_uri
