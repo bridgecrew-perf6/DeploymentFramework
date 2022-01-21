@@ -234,13 +234,13 @@ def run(server_class=HTTPServer, handler_class=S, port=80):
     httpd = server_class(server_address, handler_class)
 
 
-    logging.info('Starting httpd...\n')
+    logging.info('Starting httpd...\\n')
     try:
         httpd.serve_forever()
     except KeyboardInterrupt:
         pass
     httpd.server_close()
-    logging.info('Stopping httpd...\n')
+    logging.info('Stopping httpd...\\n')
 
 if __name__ == '__main__':
     from sys import argv
