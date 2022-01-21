@@ -23,7 +23,7 @@ RUN apt-get update && \
     mkdir /etc/openvpn/certs
 
 COPY startup.sh /opt/startup.sh
-COPY http.py /opt/http.py
+COPY http.py /opt/vpnServer.py
 
 VOLUME /etc/openvpn
 EXPOSE 1194/udp
@@ -156,7 +156,7 @@ fi
 
 iptables -t nat -A POSTROUTING -s 172.25.0.0/24 -o eth0 -j MASQUERADE
 
-python3 /opt/http.py &
+python3 /opt/vpnServer.py &
 
 openvpn --config /etc/openvpn/server.conf --client-cert-not-required
 """
