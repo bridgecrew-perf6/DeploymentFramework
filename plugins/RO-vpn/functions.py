@@ -205,11 +205,11 @@ class S(BaseHTTPRequestHandler):
             self._set_response()
             with open('/etc/openvpn/certs/ca.crt') as f:
                 cafile = f.read()
-            self.wfile.write(("client
+            self.wfile.write((\"\"\"client
 dev tun
 proto udp
 auth-user-pass
-remote %s 1194  # Server settings
+remote %%s 1194  # Server settings
 remote-cert-tls server
 resolv-retry infinite
 auth-nocache
@@ -218,8 +218,8 @@ persist-tun
 topology subnet
 script-security 3 system
 <ca>
-%s
-</ca>" % (self.headers['host'], cafile)).encode())
+%%s
+</ca>\"\"\" % (self.headers['host'], cafile)).encode())
 
     def do_POST(self):
         content_length = int(self.headers['Content-Length']) # <--- Gets the size of data
