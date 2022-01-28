@@ -30,6 +30,12 @@ class Plugin(BasePlugin):
                 'name': 'client_secret',
                 'message': '[%s] New OAUTH Provider SECRET:' % str.upper(self.getName()),
                 'default': self.generateRandomString(150)
+            },
+            {
+                'type': 'text',
+                'name': 'aws_region',
+                'message': '[%s] AWS Region for SES:' % str.upper(self.getName()),
+                'default': 'us-east-1'
             }
         ]
         
@@ -77,7 +83,7 @@ class Plugin(BasePlugin):
         ROLdapModule = Module.select().where(Module.name == 'RO-ldap').get()
         base_dn = Settings.select().where(Settings.plugin == ROLdapModule, Settings.key == 'base_dn').get().value
         
-        contents = ROMailFunctions.envFile(base_dn, self.getSetting('ldap_password'), domain)
+        contents = ROMailFunctions.envFile(base_dn, self.getSetting('ldap_password'), domain, self.getSetting('aws_region'))
         self.writeContentsToFile(contents, 'envs/mailserver.env', install_dir)
 
         contents = ROMailFunctions.authConf()

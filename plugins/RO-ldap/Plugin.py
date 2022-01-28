@@ -58,6 +58,12 @@ class Plugin(BasePlugin):
                 'name': 'it_password',
                 'message': '[%s] Default itsupport@%s Password:' % (str.upper(self.getName()), domain)
             },
+             {
+                'type': 'input',
+                'name': 's3_bucket',
+                'message': '[%s] AWS S3 Bucket for Backups' % self.getName(),
+                'default': '%s_ldap' % str.lower(domain)
+            },
 
         ]
         
@@ -93,7 +99,7 @@ class Plugin(BasePlugin):
         # ENV File
         RemoteOfficeModule = Module.select().where(Module.name == 'RemoteOffice').get()
         domain = Settings.select().where(Settings.plugin == RemoteOfficeModule, Settings.key == 'domain_name').get().value
-        contents = ROLdapFunctions.envFile(domain, self.getSetting('organization_name'), self.getSetting('admin_pass'),self.getSetting('config_pass'),)
+        contents = ROLdapFunctions.envFile(domain, self.getSetting('organization_name'), self.getSetting('admin_pass'),self.getSetting('config_pass'),self.getSetting('s3_bucket'))
         self.writeContentsToFile(contents, 'envs/ldap.env', install_dir)
     
     # Preform any additional config before the container is launched.

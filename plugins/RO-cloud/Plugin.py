@@ -59,7 +59,13 @@ class Plugin(BasePlugin):
                 'type': 'password',
                 'name': 'ldap_pass',
                 'message': '[%s] New Password For CLOUD-BIND ldap account' % self.getName()
-            }
+            },
+            {
+                'type': 'input',
+                'name': 's3_bucket',
+                'message': '[%s] AWS S3 Bucket for Storage' % self.getName(),
+                'default': '%s_nextcloud' % str.lower(domain)
+            },
 
         ]
         
@@ -102,7 +108,7 @@ class Plugin(BasePlugin):
         RemoteOfficeModule = Module.select().where(Module.name == 'RemoteOffice').get()
         domain = Settings.select().where(Settings.plugin == RemoteOfficeModule, Settings.key == 'domain_name').get().value
         
-        contents = ROCloudFunctions.envFile(self.getSetting('db_name'), self.getSetting('db_user'), self.getSetting('db_pass'), self.getSetting('admin_user'), self.getSetting('admin_pass'), domain)
+        contents = ROCloudFunctions.envFile(self.getSetting('db_name'), self.getSetting('db_user'), self.getSetting('db_pass'), self.getSetting('admin_user'), self.getSetting('admin_pass'), domain, self.getSetting('s3_bucket'))
         self.writeContentsToFile(contents, 'envs/cloud.env', install_dir)
         
 

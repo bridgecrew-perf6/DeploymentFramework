@@ -32,7 +32,7 @@ def dockerFile(domain):
       - ./envs/ldap.env
 """ % domain
 
-def envFile(domain, organization, admin_pass, config_pass):
+def envFile(domain, organization, admin_pass, config_pass, s3_bucket):
     return """DOMAIN=%s
 ORGANIZATION=%s
 
@@ -48,7 +48,7 @@ LOG_LEVEL=256
 
 SCHEMA_TYPE=nis
 
-DEBUG_MODE=TRUE
+DEBUG_MODE=FALSE
 
 ENABLE_TLS=TRUE
 TLS_CREATE_CA=TRUE
@@ -62,12 +62,13 @@ SSL_HELPER_PREFIX=ldap
 REMOVE_CONFIG_AFTER_SETUP=true
 
 ENABLE_BACKUP=TRUE
+BACKUP_S3_BUCKET=%s
 BACKUP_INTERVAL=0400
 BACKUP_RETENTION=10080
 
 CONTAINER_ENABLE_MONITORING=TRUE
 CONTAINER_NAME=ldap
-""" % (domain, organization, admin_pass, config_pass, domain)
+""" % (domain, organization, admin_pass, config_pass, domain, s3_bucket)
 
 def serviceAccountLDIF(base_dn, username, password):
       return """

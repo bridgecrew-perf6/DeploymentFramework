@@ -42,7 +42,7 @@ def dockerFile():
     restart: always
 """
 
-def envFile(base_dn, ldap_pass, domain):
+def envFile(base_dn, ldap_pass, domain, aws_region):
     return """ENABLE_SPAMASSASSIN=1
 SPAMASSASSIN_SPAM_TO_INBOX=1
 ENABLE_CLAMAV=1
@@ -74,7 +74,8 @@ OVERRIDE_HOSTNAME=%s
 DOVECOT_PASS_ATTRS=uid=user,userPassword=password
 DOVECOT_USER_ATTRS==uid=5000,=gid=5000,=home=/var/mail/%%Ln,=mail=maildir:~/Maildir
 DOVECOT_AUTH_BIND=yes
-""" % (base_dn, base_dn, ldap_pass, base_dn, ldap_pass, base_dn, domain, domain)
+DEFAULT_RELAY_HOST=email-smtp.%s.amazonaws.com:587
+""" % (base_dn, base_dn, ldap_pass, base_dn, ldap_pass, base_dn, domain, domain, aws_region)
 
 def authConf():
     return """

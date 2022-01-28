@@ -14,7 +14,7 @@ def dockerFile():
       - sso-server
 """
 
-def envFile(db_name, db_user, db_password, default_admin, default_pass, domain):
+def envFile(db_name, db_user, db_password, default_admin, default_pass, domain, s3_bucket):
     return """POSTGRES_HOST=postgresql
 POSTGRES_DB=%s
 POSTGRES_USER=%s
@@ -24,4 +24,5 @@ NEXTCLOUD_ADMIN_PASSWORD=%s
 REDIS_HOST=redis
 OVERWRITEHOST=cloud.%s
 OVERWRITEPROTOCOL=https
-""" % (db_name, db_user, db_password, default_admin, default_pass, domain)
+OBJECTSTORE_S3_BUCKET=%s
+""" % (db_name, db_user, db_password, default_admin, default_pass, domain, s3_bucket)
