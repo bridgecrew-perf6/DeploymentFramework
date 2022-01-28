@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 from core.app import Application
 import yaml
 import sys

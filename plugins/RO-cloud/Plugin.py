@@ -66,6 +66,13 @@ class Plugin(BasePlugin):
                 'message': '[%s] AWS S3 Bucket for Storage' % self.getName(),
                 'default': '%s_nextcloud' % str.lower(domain)
             },
+            {
+                'type': 'input',
+                'name': 's3_region',
+                'message': '[%s] AWS Region S3 Bucket Exists' % self.getName(),
+                'default': 'us-east-1'
+            },
+
 
         ]
         
@@ -108,7 +115,7 @@ class Plugin(BasePlugin):
         RemoteOfficeModule = Module.select().where(Module.name == 'RemoteOffice').get()
         domain = Settings.select().where(Settings.plugin == RemoteOfficeModule, Settings.key == 'domain_name').get().value
         
-        contents = ROCloudFunctions.envFile(self.getSetting('db_name'), self.getSetting('db_user'), self.getSetting('db_pass'), self.getSetting('admin_user'), self.getSetting('admin_pass'), domain, self.getSetting('s3_bucket'))
+        contents = ROCloudFunctions.envFile(self.getSetting('db_name'), self.getSetting('db_user'), self.getSetting('db_pass'), self.getSetting('admin_user'), self.getSetting('admin_pass'), domain, self.getSetting('s3_bucket'), self.getSetting('s3_region'))
         self.writeContentsToFile(contents, 'envs/cloud.env', install_dir)
         
 
