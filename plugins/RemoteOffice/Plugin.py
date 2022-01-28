@@ -111,5 +111,5 @@ class Plugin(BasePlugin):
         import shutil
         install_dir = Settings.select().where(Settings.plugin == self.module, Settings.key == 'install_dir').get().value
         self.events.emit("docker.down", install_dir)
-        shutil.rmtree(install_dir)
+        shutil.rmtree(install_dir+"/*")
         os.remove('config.db')
