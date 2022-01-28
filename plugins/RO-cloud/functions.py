@@ -26,4 +26,4 @@ OVERWRITEHOST=cloud.%s
 OVERWRITEPROTOCOL=https
 OBJECTSTORE_S3_REGION=%s
 OBJECTSTORE_S3_BUCKET=%s
-""" % (db_name, db_user, db_password, default_admin, default_pass, domain, s3_bucket, s3_region)
+""" % (db_name, db_user, db_password, default_admin, default_pass, domain, s3_region, s3_bucket)
