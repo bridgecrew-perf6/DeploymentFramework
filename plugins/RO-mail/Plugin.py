@@ -32,7 +32,7 @@ class Plugin(BasePlugin):
                 'default': self.generateRandomString(150)
             },
             {
-                'type': 'text',
+                'type': 'input',
                 'name': 'aws_region',
                 'message': '[%s] AWS Region for SES:' % str.upper(self.getName()),
                 'default': 'us-east-1'
