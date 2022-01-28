@@ -110,6 +110,9 @@ class Plugin(BasePlugin):
     def resetOffice(self):
         import shutil
         install_dir = Settings.select().where(Settings.plugin == self.module, Settings.key == 'install_dir').get().value
-        self.events.emit("docker.down", install_dir)
+        try:
+            self.events.emit("docker.down", install_dir)
+        except:
+            print("Error Stopping VRO...")
         shutil.rmtree(install_dir+"/*")
         os.remove('config.db')
